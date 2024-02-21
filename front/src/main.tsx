@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import CatMap from './Components/CatMap.tsx';
 import Layout from './Components/Layout.tsx';
+import NotFound from './Components/NotFound.tsx';
 import './index.css'
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import 'mapbox-gl/dist/mapbox-gl.css'; // contains styles to display map
@@ -17,6 +18,10 @@ const Main = () => {
           path: "/", 
           element: <CatMap />,
         },
+        {
+          path: "*",
+          element: <NotFound />,
+        }
       ],
     },
   ]);

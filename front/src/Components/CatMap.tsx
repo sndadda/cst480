@@ -43,7 +43,7 @@ function CatMap() {
     }, []);
 
     return (
-        <div ref={mapContainer} style={{ width: '100%', height: '100vh' }} />
+        <div ref={mapContainer} style={{ width: '96%', height: '100vh' }} />
     );
 }
 

@@ -156,7 +156,7 @@ app.post("/api/logout", async (req, res) => {
         return res.status(404).json({ error: "Invalid token." });
     }
     try {
-        await db.all("DELETE FROM tokens WHERE token=(?)", [token]);
+        await db.all("DELETE FROM tokens WHERE token=?", [token]);
     }
     catch (err) {
         let error = err;

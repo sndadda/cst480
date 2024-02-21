@@ -10,4 +10,19 @@ let userBodySchema = z.object({
 });
 type User = z.infer<typeof userBodySchema>;
 
-export { userBodySchema, User };
+let dummyUsers: User[] = [
+  {
+    username: "francisco",
+    password: "Francisco123#",
+  },
+  {
+    username: "sandra",
+    password: "Sandra123#",
+  },
+  {
+    username: "kevin",
+    password: "Kevin123#",
+  },
+];
+
+export { userBodySchema, User, dummyUsers };

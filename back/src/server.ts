@@ -22,8 +22,6 @@ let db = await open({
 });
 await db.get("PRAGMA foreign_keys = ON");
 
-let tokenStorage: { [key: string]: string } = {}; // TODO use different token storage system???
-
 let cookieOptions: CookieOptions = {
   httpOnly: true,
   secure: true,
@@ -34,17 +32,37 @@ function makeToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
-let authorize: RequestHandler = (req, res, next) => {
+let authorize: RequestHandler = async (req, res, next) => {
   let { token } = req.cookies;
-  if (token === undefined || !tokenStorage.hasOwnProperty(token)) {
+  if (token === undefined) {
+    return res.status(403).json({ message: "Unauthorized" });
+  }
+  let result;
+  try {
+    result = await db.all("SELECT * FROM tokens WHERE token=?", [token]);
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
+  if (result.length === 0) {
     return res.status(403).json({ message: "Unauthorized" });
   }
   next();
 };
 
-app.get("/api/loggedin", (req, res) => {
+app.get("/api/loggedin", async (req, res) => {
   let { token } = req.cookies;
-  if (token === undefined || !tokenStorage.hasOwnProperty(token)) {
+  if (token === undefined) {
+    return res.json({ loggedIn: false });
+  }
+  let result;
+  try {
+    result = await db.all("SELECT * FROM tokens WHERE token=?", [token]);
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
+  if (result.length === 0) {
     return res.json({ loggedIn: false });
   }
   return res.json({ loggedIn: true });
@@ -113,16 +131,39 @@ app.post("/api/login", async (req, res) => {
     return res.status(400).json({ error: "Password does not match." });
   }
   let token = makeToken();
-  tokenStorage[token] = username;
+  try {
+    await db.all("INSERT INTO tokens(token, username) VALUES(?, ?)", [
+      token,
+      username,
+    ]);
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
   return res.status(200).cookie("token", token, cookieOptions).json();
 });
 
-app.post("/api/logout", (req, res) => {
+app.post("/api/logout", async (req, res) => {
   let { token } = req.cookies;
-  if (token === undefined || !tokenStorage.hasOwnProperty(token)) {
+  if (token === undefined) {
     return res.status(400).json({ error: "You are already logged out." });
   }
-  delete tokenStorage[token];
+  let result;
+  try {
+    result = await db.all("SELECT * FROM tokens WHERE token=?", [token]);
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
+  if (result.length === 0) {
+    return res.status(404).json({ error: "Invalid token." });
+  }
+  try {
+    await db.all("DELETE FROM tokens WHERE token=(?)", [token]);
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
   return res.status(204).clearCookie("token", cookieOptions).json();
 });
 

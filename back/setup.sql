@@ -3,3 +3,8 @@ CREATE TABLE users (
     username TEXT,
     password TEXT
 );
+
+CREATE TABLE tokens (
+    token TEXT,
+    username TEXT
+);

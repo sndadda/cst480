@@ -121,7 +121,7 @@ test("CREATE /create invalid password (below 8 characters) returns error: 400", 
   }
 });
 
-test("LOGIN /login valid username and password logins user in: 200", async () => {
+test("LOGIN /login valid username and password logs in user in: 200", async () => {
   let { status, headers } = await axios.post(`/login`, dummyUsers[0]);
   expect(status).toBe(200);
   expect(headers).toHaveProperty("set-cookie");

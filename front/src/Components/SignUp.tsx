@@ -1,24 +1,23 @@
 import { useState } from "react";
-import { getServerErrorMessages } from "./utils";
 import axios from "axios";
-import "./Login.css";
-import SignUp from "./SignUp";
+import { getServerErrorMessages } from "./utils";
+import "./SignUp.css";
 
-function Login({ setRefresh }: any) {
-    let [loginForm, setLoginForm] = useState({
+function SignUp({ setRegistered }: any) {
+    let [signUpForm, setSignUpForm] = useState({
         username: "",
         password: "",
     });
-    let [registered, setRegistered] = useState<boolean>(true);
     let [messages, setMessages] = useState<string[]>([]);
+    let [success, setSuccess] = useState(false);
 
     let handleSubmit = async function () {
         setMessages([]);
-        if (validLogin()) {
+        if (validSignUp()) {
             try {
-                await axios.post("/api/login", loginForm);
-                setRefresh("login");
+                await axios.post("/api/create", signUpForm);
                 setMessages([]);
+                setSuccess(true);
             } catch (error) {
                 setMessages(getServerErrorMessages(error));
             }
@@ -27,22 +26,22 @@ function Login({ setRefresh }: any) {
         }
     };
 
-    function validLogin() {
+    function validSignUp() {
         let messageList: string[] = [];
         let valid = true;
-        if (!loginForm.username) {
+        if (!signUpForm.username) {
             messageList.push("*Must enter a username.");
             valid = false;
         }
-        if (!loginForm.password) {
+        if (!signUpForm.password) {
             messageList.push("*Must enter a password.");
             valid = false;
         }
-        if (loginForm.username.length < 3) {
+        if (signUpForm.username.length < 3) {
             messageList.push("*Username must be at least 3 characters.");
             valid = false;
         }
-        if (loginForm.password.length < 8) {
+        if (signUpForm.password.length < 8) {
             messageList.push("*Password must be at least 8 characters.");
             valid = false;
         }
@@ -50,15 +49,30 @@ function Login({ setRefresh }: any) {
         return valid;
     }
 
-    let loginPage = (
-        <div id="login-form">
-            <h2>Login Page:</h2>
+    let successPage = (
+        <div id="success-page">
+            <div>
+                You have successfully created an account! Please now login :)
+            </div>
+            <button
+                onClick={() => {
+                    setRegistered(true);
+                }}
+            >
+                Login
+            </button>
+        </div>
+    );
+
+    let signUpPage = (
+        <div id="sign-up-form">
+            <h2>Sign Up:</h2>
             <input
                 id="username"
-                value={loginForm.username}
+                value={signUpForm.username}
                 onChange={(e) => {
-                    setLoginForm({
-                        ...loginForm,
+                    setSignUpForm({
+                        ...signUpForm,
                         [e.target.id]: e.target.value,
                     });
                 }}
@@ -66,23 +80,23 @@ function Login({ setRefresh }: any) {
             ></input>
             <input
                 id="password"
-                value={loginForm.password}
+                value={signUpForm.password}
                 onChange={(e) => {
-                    setLoginForm({
-                        ...loginForm,
+                    setSignUpForm({
+                        ...signUpForm,
                         [e.target.id]: e.target.value,
                     });
                 }}
                 placeholder="Password"
             ></input>
-            <button onClick={handleSubmit}>Login</button>
-            <div>Don't have an account?</div>
+            <button onClick={handleSubmit}>Register</button>
+            <div>Already have an account?</div>
             <button
                 onClick={() => {
-                    setRegistered(false);
+                    setRegistered(true);
                 }}
             >
-                Register
+                Login
             </button>
             <div className="error-message">
                 {messages.map((message, i) => (
@@ -92,9 +106,7 @@ function Login({ setRefresh }: any) {
         </div>
     );
 
-    return (
-        <>{registered ? loginPage : <SignUp setRegistered={setRegistered} />}</>
-    );
+    return <>{success ? successPage : signUpPage}</>;
 }
 
-export default Login;
+export default SignUp;

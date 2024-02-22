@@ -6,7 +6,7 @@ import "./Layout.css";
 import Login from "./Login";
 
 function Header({ setRefresh }: any) {
-    // TODO find better type def for action???
+    // TODO find better type def for setRefresh???
     let handleLogout = async function () {
         try {
             await axios.post("/api/logout");

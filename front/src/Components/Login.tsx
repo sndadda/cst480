@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { getServerErrorMessages } from "./utils";
 import axios from "axios";
-import "./Login.css";
 import SignUp from "./SignUp";
+import "./Login.css";
+import { FaUser, FaEye } from "react-icons/fa";
 
 function Login({ setRefresh }: any) {
     let [loginForm, setLoginForm] = useState({
@@ -51,43 +52,57 @@ function Login({ setRefresh }: any) {
     }
 
     let loginPage = (
-        <div id="login-form">
-            <h2>Login Page:</h2>
-            <input
-                id="username"
-                value={loginForm.username}
-                onChange={(e) => {
-                    setLoginForm({
-                        ...loginForm,
-                        [e.target.id]: e.target.value,
-                    });
-                }}
-                placeholder="Username"
-            ></input>
-            <input
-                id="password"
-                value={loginForm.password}
-                onChange={(e) => {
-                    setLoginForm({
-                        ...loginForm,
-                        [e.target.id]: e.target.value,
-                    });
-                }}
-                placeholder="Password"
-            ></input>
-            <button onClick={handleSubmit}>Login</button>
-            <div>Don't have an account?</div>
-            <button
-                onClick={() => {
-                    setRegistered(false);
-                }}
-            >
-                Register
-            </button>
-            <div className="error-message">
-                {messages.map((message, i) => (
-                    <div key={i}>{message}</div>
-                ))}
+        <div className="login-form-container">
+            <div id="login-form">
+                <h1>Login</h1>
+                <div className="input-box">
+                    <input
+                        id="username"
+                        value={loginForm.username}
+                        onChange={(e) => {
+                            setLoginForm({
+                                ...loginForm,
+                                [e.target.id]: e.target.value,
+                            });
+                        }}
+                        placeholder="Username"
+                    ></input>
+                    <FaUser className="icon" />
+                </div>
+                <div className="input-box">
+                    <input
+                        id="password"
+                        value={loginForm.password}
+                        onChange={(e) => {
+                            setLoginForm({
+                                ...loginForm,
+                                [e.target.id]: e.target.value,
+                            });
+                        }}
+                        placeholder="Password"
+                    ></input>
+                    <FaEye className="icon" />
+                </div>
+                <button className="login-button" onClick={handleSubmit}>
+                    Login
+                </button>
+                <div className="register-link">
+                    Don't have an account?{" "}
+                    <button
+                        className="register-button"
+                        onClick={() => {
+                            setRegistered(false);
+                        }}
+                    >
+                        Register
+                    </button>
+                </div>
+
+                <div className="error-message">
+                    {messages.map((message, i) => (
+                        <div key={i}>{message}</div>
+                    ))}
+                </div>
             </div>
         </div>
     );

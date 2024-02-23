@@ -2,12 +2,15 @@ import { useState } from "react";
 import axios from "axios";
 import { getServerErrorMessages } from "./utils";
 import "./SignUp.css";
+import { FaUser, FaEye, FaEyeSlash, FaRegSmileBeam } from "react-icons/fa";
 
-function SignUp({ setRegistered }: any) {
+function SignUp({ setRegistered, setLoginMessages }: any) {
     let [signUpForm, setSignUpForm] = useState({
         username: "",
         password: "",
     });
+    let [passwordVisibility, setPasswordVisibility] =
+        useState<string>("password");
     let [messages, setMessages] = useState<string[]>([]);
     let [success, setSuccess] = useState(false);
 
@@ -50,58 +53,96 @@ function SignUp({ setRegistered }: any) {
     }
 
     let successPage = (
-        <div id="success-page">
-            <div>
-                You have successfully created an account! Please now login :)
+        <div className="success-page-container">
+            <div id="success-page">
+                <div className="success-message">
+                    You have successfully created an account!
+                    <div>
+                        Please{" "}
+                        <button
+                            className="login-button"
+                            onClick={() => {
+                                setLoginMessages([]);
+                                setRegistered(true);
+                            }}
+                        >
+                            login
+                        </button>{" "}
+                        <FaRegSmileBeam className="smile-icon" />
+                    </div>
+                </div>
             </div>
-            <button
-                onClick={() => {
-                    setRegistered(true);
-                }}
-            >
-                Login
-            </button>
         </div>
     );
 
     let signUpPage = (
-        <div id="sign-up-form">
-            <h2>Sign Up:</h2>
-            <input
-                id="username"
-                value={signUpForm.username}
-                onChange={(e) => {
-                    setSignUpForm({
-                        ...signUpForm,
-                        [e.target.id]: e.target.value,
-                    });
-                }}
-                placeholder="Username"
-            ></input>
-            <input
-                id="password"
-                value={signUpForm.password}
-                onChange={(e) => {
-                    setSignUpForm({
-                        ...signUpForm,
-                        [e.target.id]: e.target.value,
-                    });
-                }}
-                placeholder="Password"
-            ></input>
-            <button onClick={handleSubmit}>Register</button>
-            <div>Already have an account?</div>
-            <button
-                onClick={() => {
-                    setRegistered(true);
-                }}
-            >
-                Login
-            </button>
-            <div className="error-message">
-                {messages.map((message, i) => (
-                    <div key={i}>{message}</div>
-                ))}
+        <div className="sign-up-form-container">
+            <div id="sign-up-form">
+                <h1>Sign Up</h1>
+                <div className="input-box">
+                    <input
+                        id="username"
+                        value={signUpForm.username}
+                        onChange={(e) => {
+                            setSignUpForm({
+                                ...signUpForm,
+                                [e.target.id]: e.target.value,
+                            });
+                        }}
+                        placeholder="Username"
+                    ></input>
+                    <FaUser className="user-icon" />
+                </div>
+                <div className="input-box">
+                    <input
+                        id="password"
+                        type={passwordVisibility}
+                        value={signUpForm.password}
+                        onChange={(e) => {
+                            setSignUpForm({
+                                ...signUpForm,
+                                [e.target.id]: e.target.value,
+                            });
+                        }}
+                        placeholder="Password"
+                    ></input>
+                    {passwordVisibility === "password" ? (
+                        <FaEyeSlash
+                            className="eye-icon"
+                            onClick={() => {
+                                setPasswordVisibility("text");
+                            }}
+                        />
+                    ) : (
+                        <FaEye
+                            className="eye-icon"
+                            onClick={() => {
+                                setPasswordVisibility("password");
+                            }}
+                        />
+                    )}
+                </div>
+                <button className="sign-up-button" onClick={handleSubmit}>
+                    Register
+                </button>
+                <div className="login-link">
+                    Already have an account?{" "}
+                    <button
+                        className="login-button"
+                        onClick={() => {
+                            setLoginMessages([]);
+                            setRegistered(true);
+                        }}
+                    >
+                        Login
+                    </button>
+                </div>
+
+                <div className="error-message">
+                    {messages.map((message, i) => (
+                        <div key={i}>{message}</div>
+                    ))}
+                </div>
             </div>
         </div>
     );

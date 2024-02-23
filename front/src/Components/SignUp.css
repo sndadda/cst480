@@ -1,0 +1,141 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+.sign-up-form-container {
+    font-family: "Poppins", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-image: url("/cat_map_background.png");
+    background-size: cover;
+    background-position: center;
+}
+
+#sign-up-form {
+    width: 420px;
+    background: transparent;
+    border: 2px solid #fff;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 10px gray;
+    color: #fff;
+    border-radius: 10px;
+    padding: 30px 40px;
+}
+
+#sign-up-form h1 {
+    font-size: 36px;
+    text-align: center;
+}
+
+#sign-up-form .input-box {
+    position: relative;
+    width: 100%;
+    height: 50px;
+    margin: 30px 0;
+}
+
+#sign-up-form .input-box input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    outline: none;
+    border: 2px solid #fff;
+    border-radius: 40px;
+    font-size: 16px;
+    color: #fff;
+    padding: 20px 45px 20px 20px;
+}
+
+#sign-up-form .input-box input::placeholder {
+    color: #fff;
+}
+
+#sign-up-form .input-box .user-icon,
+#sign-up-form .input-box .eye-icon {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+}
+
+#sign-up-form .input-box .eye-icon {
+    cursor: pointer;
+}
+
+#sign-up-form .sign-up-button {
+    width: 100%;
+    height: 45px;
+    background: #fff;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    box-shadow: 0 0 15px gray;
+    cursor: pointer;
+    font-size: 16px;
+    color: #333;
+    font-weight: 600;
+}
+
+#sign-up-form .login-link {
+    font-size: 14px;
+    text-align: center;
+    margin: 20px 0 15px;
+}
+
+#sign-up-form .login-link .login-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+#sign-up-form .error-message {
+    color: darkred;
+}
+
+.success-page-container {
+    font-family: "Poppins", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-image: url("/register_success_background.png");
+    background-size: cover;
+    background-position: center;
+}
+
+#success-page {
+    width: 460px;
+    background: transparent;
+    border: 2px solid #fff;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 10px gray;
+    color: #fff;
+    border-radius: 10px;
+    padding: 20px 30px;
+}
+
+#success-page .success-message {
+    font-size: 18px;
+    text-align: center;
+    margin: 15px 0;
+}
+
+#success-page .success-message .login-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+#success-page .success-message .smile-icon {
+    position: relative;
+    top: 3px;
+    font-size: 18px;
+}

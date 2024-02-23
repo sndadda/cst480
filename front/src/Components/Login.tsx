@@ -53,10 +53,6 @@ function Login({ setRefresh }: any) {
         return valid;
     }
 
-    function changePasswordVisibility() {
-        return;
-    }
-
     let loginPage = (
         <div className="login-form-container">
             <div id="login-form">
@@ -129,7 +125,16 @@ function Login({ setRefresh }: any) {
     );
 
     return (
-        <>{registered ? loginPage : <SignUp setRegistered={setRegistered} />}</>
+        <>
+            {registered ? (
+                loginPage
+            ) : (
+                <SignUp
+                    setRegistered={setRegistered}
+                    setLoginMessages={setMessages}
+                />
+            )}
+        </>
     );
 }
 

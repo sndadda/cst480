@@ -3,7 +3,7 @@ import { getServerErrorMessages } from "./utils";
 import axios from "axios";
 import SignUp from "./SignUp";
 import "./Login.css";
-import { FaUser, FaEye } from "react-icons/fa";
+import { FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
 
 function Login({ setRefresh }: any) {
     let [loginForm, setLoginForm] = useState({
@@ -11,6 +11,8 @@ function Login({ setRefresh }: any) {
         password: "",
     });
     let [registered, setRegistered] = useState<boolean>(true);
+    let [passwordVisibility, setPasswordVisibility] =
+        useState<string>("password");
     let [messages, setMessages] = useState<string[]>([]);
 
     let handleSubmit = async function () {
@@ -51,6 +53,10 @@ function Login({ setRefresh }: any) {
         return valid;
     }
 
+    function changePasswordVisibility() {
+        return;
+    }
+
     let loginPage = (
         <div className="login-form-container">
             <div id="login-form">
@@ -67,11 +73,12 @@ function Login({ setRefresh }: any) {
                         }}
                         placeholder="Username"
                     ></input>
-                    <FaUser className="icon" />
+                    <FaUser className="user-icon" />
                 </div>
                 <div className="input-box">
                     <input
                         id="password"
+                        type={passwordVisibility}
                         value={loginForm.password}
                         onChange={(e) => {
                             setLoginForm({
@@ -81,7 +88,21 @@ function Login({ setRefresh }: any) {
                         }}
                         placeholder="Password"
                     ></input>
-                    <FaEye className="icon" />
+                    {passwordVisibility === "password" ? (
+                        <FaEyeSlash
+                            className="eye-icon"
+                            onClick={() => {
+                                setPasswordVisibility("text");
+                            }}
+                        />
+                    ) : (
+                        <FaEye
+                            className="eye-icon"
+                            onClick={() => {
+                                setPasswordVisibility("password");
+                            }}
+                        />
+                    )}
                 </div>
                 <button className="login-button" onClick={handleSubmit}>
                     Login

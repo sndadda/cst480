@@ -58,12 +58,17 @@
     color: #fff;
 }
 
-.input-box .icon {
+.input-box .user-icon,
+.input-box .eye-icon {
     position: absolute; /* removed from the normal flow, and can overlap elements */
     right: 20px;
     top: 50%;
     transform: translateY(-50%); /* ??? */
     font-size: 16px;
+}
+
+.input-box .eye-icon {
+    cursor: pointer;
 }
 
 #login-form .login-button {

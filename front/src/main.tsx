@@ -7,6 +7,7 @@ import NotFound from './Components/NotFound.tsx';
 import './index.css'
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import 'mapbox-gl/dist/mapbox-gl.css'; // contains styles to display map
+import UserFeed from './Components/UserFeed.tsx';
 
 const Main = () => {
 
@@ -17,6 +18,10 @@ const Main = () => {
         {
           path: "/", 
           element: <CatMap />,
+        },
+        {
+          path: "/feed", 
+          element: <UserFeed />,
         },
         {
           path: "*",

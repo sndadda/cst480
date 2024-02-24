@@ -6,6 +6,7 @@ import crypto from "crypto";
 import argon2 from "argon2";
 import cookieParser from "cookie-parser";
 import * as utils from "./utils.js";
+import multer from "multer";
 
 let app = express();
 app.use(express.json());
@@ -27,6 +28,9 @@ let cookieOptions: CookieOptions = {
   secure: true,
   sameSite: "strict",
 };
+
+//temporary directory to store image files for user posts
+const upload = multer({ dest: 'uploads/' });
 
 function makeToken() {
   return crypto.randomBytes(32).toString("hex");
@@ -166,6 +170,83 @@ app.post("/api/logout", async (req, res) => {
   }
   return res.status(204).clearCookie("token", cookieOptions).json();
 });
+
+
+///////////////////////////////////////////
+// START OF ENDPOINTS RELATED TO USER POSTS 
+//  
+app.post("/api/userPosts", upload.single('image'), async (req, res) => {
+  
+  const { username, content } = req.body;
+  let user_id : number;
+  
+  const image = req.file ? req.file.buffer : null; // Check if image is uploaded
+  if (req.file) {
+    console.log(`the file buffer: ${req.file.buffer}`);
+  }
+  else {
+    console.log('it is null.')
+  }
+  
+  try {
+    const result = await db.all(
+      "SELECT id FROM users WHERE username = ?",
+      [username]
+    );
+    
+    if (result.length > 0) {
+
+      user_id = result[0].id;
+      await db.run(
+        "INSERT INTO user_posts(user_id, content, image) VALUES (?, ?, ?)",
+        [user_id, content, image]
+      );
+
+      return res.status(201).json({ message: 'Post created successfully' });
+    }
+
+    return res.status(404).json({ message: 'Username not found' });
+    
+  } catch (err) {
+    return res.status(500).json({ error: 'Error inserting post into database' });
+  }
+  
+  
+});
+
+app.get("/api/userPosts", async (req, res) => {
+  try {
+    const result = await db.all('SELECT * FROM user_posts');
+    return res.status(200).json({ message: result });
+
+  } catch (err) {
+    return res.status(500).json({ error: 'Error displaying posts' });
+  }
+
+});
+
+app.get("/api/postComments", async (req, res) => {
+  try {
+    //console.log("trying to get comments");
+    const result = await db.all(
+      'SELECT * FROM comments ORDER BY time ASC',
+    );
+
+    return res.status(200).json({ message: result });
+  } catch (err) {
+    return res.status(500).json({ error: 'Error getting comments' });
+  }
+});
+
+app.post('/profile', upload.single('avatar'), function (req, res, next) {
+  // req.file is the `avatar` file
+  // req.body will hold the text fields, if there were any
+  console.log(req.file);
+})
+
+// END OF ENDPOINTS RELATED TO USER POSTS 
+///////////////////////////////////////////
+
 
 // run server
 let port = 3000;

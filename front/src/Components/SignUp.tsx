@@ -1,27 +1,26 @@
 import { useState } from "react";
-import { getServerErrorMessages } from "./utils";
 import axios from "axios";
-import SignUp from "./SignUp";
-import "./Login.css";
-import { FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
+import { getServerErrorMessages } from "./utils";
+import "./SignUp.css";
+import { FaUser, FaEye, FaEyeSlash, FaRegSmileBeam } from "react-icons/fa";
 
-function Login({ setRefresh }: any) {
-    let [loginForm, setLoginForm] = useState({
+function SignUp({ setRegistered, setLoginMessages }: any) {
+    let [signUpForm, setSignUpForm] = useState({
         username: "",
         password: "",
     });
-    let [registered, setRegistered] = useState<boolean>(true);
     let [passwordVisibility, setPasswordVisibility] =
         useState<string>("password");
     let [messages, setMessages] = useState<string[]>([]);
+    let [success, setSuccess] = useState(false);
 
     let handleSubmit = async function () {
         setMessages([]);
-        if (validLogin()) {
+        if (validSignUp()) {
             try {
-                await axios.post("/api/login", loginForm);
-                setRefresh("login");
+                await axios.post("/api/create", signUpForm);
                 setMessages([]);
+                setSuccess(true);
             } catch (error) {
                 setMessages(getServerErrorMessages(error));
             }
@@ -30,22 +29,22 @@ function Login({ setRefresh }: any) {
         }
     };
 
-    function validLogin() {
+    function validSignUp() {
         let messageList: string[] = [];
         let valid = true;
-        if (!loginForm.username) {
+        if (!signUpForm.username) {
             messageList.push("*Must enter a username.");
             valid = false;
         }
-        if (!loginForm.password) {
+        if (!signUpForm.password) {
             messageList.push("*Must enter a password.");
             valid = false;
         }
-        if (loginForm.username.length < 3) {
+        if (signUpForm.username.length < 3) {
             messageList.push("*Username must be at least 3 characters.");
             valid = false;
         }
-        if (loginForm.password.length < 8) {
+        if (signUpForm.password.length < 8) {
             messageList.push("*Password must be at least 8 characters.");
             valid = false;
         }
@@ -53,17 +52,40 @@ function Login({ setRefresh }: any) {
         return valid;
     }
 
-    let loginPage = (
-        <div className="login-form-container">
-            <div id="login-form">
-                <h1>Login</h1>
+    let successPage = (
+        <div className="success-page-container">
+            <div id="success-page">
+                <div className="success-message">
+                    You have successfully created an account!
+                    <div>
+                        Please{" "}
+                        <button
+                            className="login-button"
+                            onClick={() => {
+                                setLoginMessages([]);
+                                setRegistered(true);
+                            }}
+                        >
+                            login
+                        </button>{" "}
+                        <FaRegSmileBeam className="smile-icon" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    let signUpPage = (
+        <div className="sign-up-form-container">
+            <div id="sign-up-form">
+                <h1>Sign Up</h1>
                 <div className="input-box">
                     <input
                         id="username"
-                        value={loginForm.username}
+                        value={signUpForm.username}
                         onChange={(e) => {
-                            setLoginForm({
-                                ...loginForm,
+                            setSignUpForm({
+                                ...signUpForm,
                                 [e.target.id]: e.target.value,
                             });
                         }}
@@ -75,10 +97,10 @@ function Login({ setRefresh }: any) {
                     <input
                         id="password"
                         type={passwordVisibility}
-                        value={loginForm.password}
+                        value={signUpForm.password}
                         onChange={(e) => {
-                            setLoginForm({
-                                ...loginForm,
+                            setSignUpForm({
+                                ...signUpForm,
                                 [e.target.id]: e.target.value,
                             });
                         }}
@@ -100,18 +122,19 @@ function Login({ setRefresh }: any) {
                         />
                     )}
                 </div>
-                <button className="login-button" onClick={handleSubmit}>
-                    Login
+                <button className="sign-up-button" onClick={handleSubmit}>
+                    Register
                 </button>
-                <div className="register-link">
-                    Don't have an account?{" "}
+                <div className="login-link">
+                    Already have an account?{" "}
                     <button
-                        className="register-button"
+                        className="login-button"
                         onClick={() => {
-                            setRegistered(false);
+                            setLoginMessages([]);
+                            setRegistered(true);
                         }}
                     >
-                        Register
+                        Login
                     </button>
                 </div>
 
@@ -124,18 +147,7 @@ function Login({ setRefresh }: any) {
         </div>
     );
 
-    return (
-        <>
-            {registered ? (
-                loginPage
-            ) : (
-                <SignUp
-                    setRegistered={setRegistered}
-                    setLoginMessages={setMessages}
-                />
-            )}
-        </>
-    );
+    return <>{success ? successPage : signUpPage}</>;
 }
 
-export default Login;
+export default SignUp;

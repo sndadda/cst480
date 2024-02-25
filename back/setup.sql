@@ -22,13 +22,15 @@ CREATE TABLE posts (
 
 CREATE TABLE comments (
     id INTEGER PRIMARY KEY,
+    parent_comment_id INTEGER,
     post_id INTEGER,
     user_id INTEGER,
     content TEXT,
     timestamp TIMESTAMP,
     likes INT DEFAULT 0,
     FOREIGN KEY (post_id) REFERENCES posts(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (parent_comment_id) REFERENCES comments(id)
 );
 
 CREATE TABLE markers (

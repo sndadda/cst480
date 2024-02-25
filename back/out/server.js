@@ -187,7 +187,7 @@ io.on("connection", (socket) => {
             io.emit(SOCKET_EVENTS.UPDATE_FEED, { message: insertedPost });
         }
         catch (error) {
-            socket.emit('error', { message: 'An error occurred.' });
+            socket.emit(SOCKET_EVENTS.ERROR, { message: 'An error occurred.' });
         }
     });
     socket.on(SOCKET_EVENTS.CREATE_COMMENT, async (data) => {
@@ -198,7 +198,7 @@ io.on("connection", (socket) => {
             io.emit(SOCKET_EVENTS.UPDATE_POST, { message: insertedComment });
         }
         catch (error) {
-            socket.emit('error', { message: 'An error occurred.' });
+            socket.emit(SOCKET_EVENTS.ERROR, { message: 'An error occurred.' });
         }
     });
 });

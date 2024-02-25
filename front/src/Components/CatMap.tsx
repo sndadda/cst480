@@ -1,16 +1,13 @@
-
 import mapboxgl from 'mapbox-gl';
 import "mapbox-gl/dist/mapbox-gl.css";
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoic25kYWRkYTYzIiwiYSI6ImNsc3RtdnZrODBxaDkya21xdDUyMzVseWYifQ.1LO5AE0xSXX9ndA9l1lcZw'
 
 function CatMap() {
     const mapContainer = useRef<HTMLDivElement | null>(null);
     const map = useRef<mapboxgl.Map | null>(null);
-    const [lng, setLng] = useState(-70.9);
-    const [lat, setLat] = useState(42.35);
-    const [zoom, setZoom] = useState(9);
+    const zoomedIn = useRef(false);
 
     useEffect(() => {
         if (map.current) return; // initialize map only once
@@ -27,17 +24,61 @@ function CatMap() {
         // Add navigation control (the +/- zoom buttons)
         map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-        map.current.on('click', () => {
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => {
-              const { latitude, longitude } = position.coords;
-              setLng(longitude);
-              setLat(latitude);
-              setZoom(14);
-              map.current?.flyTo({ center: [longitude, latitude], zoom: 14 });
-            });
+        // Add geolocate control to the map.
+        map.current.addControl(new mapboxgl.GeolocateControl({
+          positionOptions: {
+            enableHighAccuracy: true
+          },
+          trackUserLocation: true
+        }));
+
+        map.current.on('click', (event) => {
+          if (!zoomedIn.current) {
+            zoomedIn.current = true;
           } else {
-            alert('Geolocation is not supported by this browser.');
+            // Create a new marker and add it to the map at the clicked location
+            var marker = new mapboxgl.Marker()
+              .setLngLat(event.lngLat)
+              .addTo(map.current!);
+
+            // Create a form for the popup
+            var formElement = document.createElement('form');
+            formElement.id = 'description-form';
+
+            var label = document.createElement('label');
+            label.htmlFor = 'description';
+            label.textContent = 'Description:';
+            formElement.appendChild(label);
+
+            formElement.appendChild(document.createElement('br'));
+
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'description';
+            input.name = 'description';
+            formElement.appendChild(input);
+
+            formElement.appendChild(document.createElement('br'));
+
+            var submit = document.createElement('input');
+            submit.type = 'submit';
+            submit.value = 'Submit';
+            formElement.appendChild(submit);
+
+            // create a popup with the form and add it to the marker
+            var popup = new mapboxgl.Popup({ offset: 25 })
+                .setDOMContent(formElement);
+            marker.setPopup(popup).togglePopup(); // Open the popup
+
+            // listen for form submission
+            formElement.addEventListener('submit', function(e) {
+              e.preventDefault();
+              var descriptionElement = document.getElementById('description');
+              if (descriptionElement) {
+                var description = (descriptionElement as HTMLInputElement).value;
+                console.log(description);
+              }
+            });
           }
         });
     }, []);

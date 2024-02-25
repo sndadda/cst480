@@ -16,11 +16,13 @@
     "react-dom": "^18.2.0",
     "react-icons": "^5.0.1",
     "react-map-gl": "^7.1.7",
-    "react-router-dom": "^6.22.1"
+    "react-router-dom": "^6.22.1",
+    "socket.io-client": "^4.7.4"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
+    "@types/socket.io-client": "^3.0.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "@vitejs/plugin-react": "^4.2.1",

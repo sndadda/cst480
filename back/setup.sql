@@ -42,3 +42,12 @@ CREATE TABLE markers (
     longitude FLOAT,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+CREATE TABLE cute_cat_posts (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    likes INT DEFAULT 0,
+    caption TEXT,
+    timestamp TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);

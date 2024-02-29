@@ -182,7 +182,6 @@ app.post("/api/logout", async (req, res) => {
   return res.status(204).clearCookie("token", cookieOptions).json();
 });
 
-
 //////START OF SOCKETS//////////
 
 io.on("connection", (socket) => {
@@ -190,46 +189,67 @@ io.on("connection", (socket) => {
 
   socket.on(SOCKET_EVENTS.CREATE_POST, async (data) => {
     try {
+      const { user_id, marker_id, subject, content, image } = data;
 
-      const {user_id, marker_id, subject, content, image} = data;
-      
       const result = await db.all(
         "INSERT INTO posts (user_id, marker_id, subject, content, timestamp, image) VALUES (?, ?, ?, ?, DATETIME('now'), ?) RETURNING id",
         [user_id, marker_id, subject, content, image]
       );
-      
-      const insertedPost = await db.all('SELECT * FROM posts WHERE id = ?', [result[0].id]);
-      io.emit(SOCKET_EVENTS.UPDATE_FEED, {message: insertedPost});
 
+      const insertedPost = await db.all("SELECT * FROM posts WHERE id = ?", [
+        result[0].id,
+      ]);
+      io.emit(SOCKET_EVENTS.UPDATE_FEED, { message: insertedPost });
     } catch (error) {
-      socket.emit(SOCKET_EVENTS.ERROR, { message: 'An error occurred.' });
+      socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
     }
   });
 
-
   socket.on(SOCKET_EVENTS.CREATE_COMMENT, async (data) => {
     try {
+      const { post_id, parent_comment_id, user_id, content } = data;
 
-      const {post_id, parent_comment_id, user_id, content} = data;
-  
       const result = await db.all(
         "INSERT INTO comments(post_id, parent_comment_id, user_id, content, timestamp) VALUES(?, ?, ?, ?, DATETIME('now')) RETURNING id",
         [post_id, parent_comment_id, user_id, content]
       );
-      
-      const insertedComment = await db.all('SELECT * FROM comments WHERE id = ?', [result[0].id]);
-      io.emit(SOCKET_EVENTS.UPDATE_POST, {message: insertedComment});
 
+      const insertedComment = await db.all(
+        "SELECT * FROM comments WHERE id = ?",
+        [result[0].id]
+      );
+      io.emit(SOCKET_EVENTS.UPDATE_POST, { message: insertedComment });
     } catch (error) {
-      socket.emit(SOCKET_EVENTS.ERROR, { message: 'An error occurred.' });
+      socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
     }
   });
 
-
-  
-
-
-
+  /* Cute Cat Post Socket Events */
+  socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {
+    let userId: number = 1; // TODO grab token through initial websocket connection
+    let { image, caption, timestamp } = data; // TODO zod validate data
+    let imageRef: number;
+    let result;
+    try {
+      result = await db.all(
+        "INSERT INTO cute_cat_posts(user_id, caption, timestamp) VALUES(?, ?, ?) RETURNING id",
+        [userId, caption, timestamp]
+      );
+      imageRef = result[0].id;
+    } catch (err) {
+      let error = err as Object;
+      socket.emit(SOCKET_EVENTS.CUTE_CAT_ERROR, { error: error.toString() }); // TODO need space in front-end for listening to socket errors
+    }
+    // TODO store image in folder naming it after imageRef
+    let cuteCatFeed; // TODO set type as list of cuteCatPost objects
+    try {
+      cuteCatFeed = await db.all("SELECT * FROM cute_cat_posts");
+    } catch (err) {
+      let error = err as Object;
+      socket.emit(SOCKET_EVENTS.CUTE_CAT_ERROR, { error: error.toString() }); // TODO need space in front-end for listening to socket errors
+    }
+    socket.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, { data: cuteCatFeed });
+  });
 });
 //////END OF SOCKETS//////////
 

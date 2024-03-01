@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { socket } from '../socket.tsx';
 import SOCKET_EVENTS from "../socketEnums.js";
+import Avatar from '@mui/material/Avatar';
+import Modal from '@mui/material/Modal';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import './UserFeed.css';
 
 const UserFeed = () => {
 
@@ -17,6 +23,7 @@ const UserFeed = () => {
         user_id: '',
         content: ''
     });
+    const [showPostForm, setShowPostForm] = useState(false);
 
     useEffect(() => {
         socket.on("send-message", data => {
@@ -62,7 +69,39 @@ const UserFeed = () => {
     };
 
     return (
-        <>
+        <div className="user-feed-container">
+            <img src="cat_background.png" style={{ width: '100%', height: '100%'}}></img>
+
+            <div style={{width: '55%'}}>
+                <h1 className="feed-title">Activity Feed</h1>
+            </div>
+            <div className="new-post-input" onClick={() => setShowPostForm(true)}>
+                <Avatar></Avatar>
+                <input type="text" placeholder="Share what's on your mind..." readOnly />
+            </div>
+
+            <Modal
+                open={showPostForm}
+                onClose={() => setShowPostForm(false)}
+            >
+                <Box sx={{ width: '50%', bgcolor: 'background.paper', p: 2, mx: 'auto', my: '10%', borderRadius: 2 }}>
+                    <Avatar></Avatar>
+                    <h2>Username</h2>
+                    <TextField
+                        id="outlined-multiline-static"
+                        label="Share what's on your mind..."
+                        multiline
+                        rows={4}
+                        variant="outlined"
+                        fullWidth
+                        onChange={handleChange}
+                        name="content"
+                        value={data.content}
+                    />
+                    <Button variant="contained" onClick={handleSubmit}>Post</Button>
+                </Box>
+            </Modal>
+
             <div className="post-form" style={{ border: "2px solid black", padding: "10px", display: "flex", flexDirection: "column"}}>
                 <h3>Create a New Post</h3>
 
@@ -99,7 +138,7 @@ const UserFeed = () => {
                 <button onClick={handleCommentSubmit}>Submit</button>
             </div>
 
-        </>
+        </div>
     );
 }
 

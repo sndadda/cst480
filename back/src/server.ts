@@ -23,6 +23,7 @@ let io = new Server(server, {
   cors: {
     origin: "http://localhost:5173",
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
@@ -197,8 +198,40 @@ app.get("/api/cuteCatPosts", authorize, async (req, res) => {
 
 //////START OF SOCKETS//////////
 
+io.use(async (socket, next) => {
+  if (!socket.handshake.headers.cookie) {
+    next(new Error("Unauthorized."));
+  } else {
+    let token = socket.handshake.headers.cookie.slice(6);
+    let result = [];
+    try {
+      result = await db.all("SELECT * FROM tokens WHERE token=?", [token]);
+    } catch (err) {
+      let error = err as Object;
+      next(new Error(error.toString()));
+    }
+    if (result.length === 0) {
+      next(new Error("Unauthorized."));
+    }
+    let { username } = result[0];
+    let userId = 0;
+    try {
+      result = await db.all("SELECT id FROM users WHERE username=?", [
+        username,
+      ]);
+      userId = result[0].id;
+    } catch (err) {
+      let error = err as Object;
+      next(new Error(error.toString()));
+    }
+    socket.data = userId;
+    next();
+  }
+});
+
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
+  let userId = socket.data; // userId is accessible in every socket event
 
   socket.on(SOCKET_EVENTS.CREATE_POST, async (data) => {
     try {
@@ -239,9 +272,9 @@ io.on("connection", (socket) => {
 
   /* Cute Cat Post Socket Events */
   socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {
-    let userId: number = 1; // TODO grab token through initial websocket connection
     let { image, caption } = data; // TODO zod validate data
     // TODO account for if caption and/or image are empty
+    let cuteCatFeed: utils.CuteCatPost[] = [];
     let imageRef: number;
     let result;
     try {
@@ -249,22 +282,15 @@ io.on("connection", (socket) => {
         "INSERT INTO cute_cat_posts(user_id, caption, timestamp) VALUES(?, ?, datetime('now')) RETURNING id",
         [userId, caption]
       );
-      imageRef = result[0].id;
-    } catch (err) {
-      let error = err as Object;
-      socket.emit(SOCKET_EVENTS.CUTE_CAT_ERROR, { error: error.toString() }); // TODO need space in front-end for listening to socket errors
-    }
-    // TODO store image in folder naming it after imageRef
-    let cuteCatFeed; // TODO set type as list of cuteCatPost objects
-    try {
+      imageRef = result[0].id; // TODO store image in folder naming it after imageRef
       cuteCatFeed = await db.all(
         "SELECT cute_cat_posts.id, username, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
       );
+      io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);
     } catch (err) {
       let error = err as Object;
       socket.emit(SOCKET_EVENTS.CUTE_CAT_ERROR, { error: error.toString() }); // TODO need space in front-end for listening to socket errors
     }
-    io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);
   });
 });
 //////END OF SOCKETS//////////

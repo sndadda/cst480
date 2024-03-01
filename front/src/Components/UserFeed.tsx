@@ -6,6 +6,9 @@ import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import Fade from '@mui/material/Fade';
+import Divider from '@mui/material/Divider';
 import './UserFeed.css';
 
 const UserFeed = () => {
@@ -39,6 +42,7 @@ const UserFeed = () => {
         });
       }, [socket]);
 
+   
 
     const handleSubmit = (e: any) => {
         e.preventDefault();
@@ -82,24 +86,124 @@ const UserFeed = () => {
 
             <Modal
                 open={showPostForm}
-                onClose={() => setShowPostForm(false)}
+                onClose={() => {
+                    setShowPostForm(false);
+                    setData({
+                        user_id: '',
+                        marker_id: '',
+                        subject: '',
+                        content: '',
+                        image: null,
+                    });
+                }}
+                closeAfterTransition
+                BackdropProps={{
+                    timeout: 500,
+                }}
             >
-                <Box sx={{ width: '50%', bgcolor: 'background.paper', p: 2, mx: 'auto', my: '10%', borderRadius: 2 }}>
-                    <Avatar></Avatar>
-                    <h2>Username</h2>
-                    <TextField
-                        id="outlined-multiline-static"
-                        label="Share what's on your mind..."
-                        multiline
-                        rows={4}
-                        variant="outlined"
-                        fullWidth
-                        onChange={handleChange}
-                        name="content"
-                        value={data.content}
-                    />
-                    <Button variant="contained" onClick={handleSubmit}>Post</Button>
-                </Box>
+                <Fade in={showPostForm} onEntered={() => {
+                    setTimeout(() => {
+                        const input = document.getElementById('filled-multiline-static');
+                        if (input) input.focus();
+                    }, 0);
+                }}>
+                    <Box sx={{ position: 'relative', width: '50%', bgcolor: 'background.paper', p: 2, mx: 'auto', my: '10%', borderRadius: 2 }}>
+                        <Button 
+                            sx={{ 
+                                position: 'absolute', 
+                                top: 0, 
+                                right: 0, 
+                                color: 'black', 
+                                fontSize: 'large' 
+                            }} 
+                            onClick={() => {
+                                setShowPostForm(false);
+                                setData({
+                                    user_id: '',
+                                    marker_id: '',
+                                    subject: '',
+                                    content: '',
+                                    image: null,
+                                });
+                            }}
+                        >X</Button>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="h6">Create post</Typography>
+                        </Box>
+                        <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} />
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <Avatar sx={{ mr: 2 }}></Avatar>
+                            <Typography variant="h6">Username</Typography>
+                        </Box>
+                        <TextField
+                            autoFocus
+                            id="filled-multiline-static"
+                            label={data.content ? '' : 'Write something...'}
+                            multiline
+                            rows={4}
+                            variant="filled"
+                            fullWidth
+                            onChange={handleChange}
+                            name="content"
+                            value={data.content}
+                            InputLabelProps={{
+                                style: {
+                                    
+                                    fontSize: '22px', 
+                                    color: 'grey'
+                                },
+                                shrink: data.content ? true : false
+                            }}
+                            InputProps={{
+                                disableUnderline: true,
+                                style: {
+                                    fontSize: '22px',
+                                },
+                            }}
+                            sx={{ 
+                                '.MuiFilledInput-root': { 
+                                    backgroundColor: 'white',
+                                    borderRadius: 0,
+                                    '&:hover': {
+                                        backgroundColor: 'white',
+                                    },
+                                    '&.Mui-focused': {
+                                        backgroundColor: 'white',
+                                    },
+                                },
+                                '.MuiFilledInput-input': {
+                                    backgroundColor: 'white',
+                                    '&:hover': {
+                                        backgroundColor: 'white',
+                                    },
+                                    '&.Mui-focused': {
+                                        backgroundColor: 'white',
+                                    },
+                                },
+                                '.MuiFilledInput-underline:before': { borderBottom: 'none' },
+                                '.MuiFilledInput-underline:after': { borderBottom: 'none' }
+                            }}
+                        />
+                        <Button 
+                            variant="contained" 
+                            onClick={handleSubmit}
+                            disabled={!data.content.trim()}
+                            sx={{ 
+                                display: 'block', 
+                                width: '100%', 
+                                mx: 'auto',
+                                color: data.content ? 'white' : '#BCC0C4',
+                              
+                                backgroundColor: data.content ? '#0861F2' : '#E5E6EB',
+                                '&:hover': {
+                                    backgroundColor: data.content ? '#0861F2' : '#E5E6EB',
+                                },
+                            }}
+                        >
+                            Post
+                        </Button>
+                    </Box>
+                </Fade>
             </Modal>
 
             <div className="post-form" style={{ border: "2px solid black", padding: "10px", display: "flex", flexDirection: "column"}}>

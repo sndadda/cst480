@@ -21,6 +21,7 @@ function Header({ setRefresh }: any) {
             <img src="/cat_globe.jpg" className="cat-logo" />
             <Link to="/">Map</Link>
             <Link to="/feed">Feed</Link>
+            <Link to="/cuteCatFeed">CuteCatFeed</Link>
             <Link to="/profile">Profile</Link>
             <Link to="/" onClick={handleLogout}>
                 Logout

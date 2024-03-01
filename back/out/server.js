@@ -206,11 +206,12 @@ io.on("connection", (socket) => {
     /* Cute Cat Post Socket Events */
     socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {
         let userId = 1; // TODO grab token through initial websocket connection
-        let { image, caption, timestamp } = data; // TODO zod validate data
+        let { image, caption } = data; // TODO zod validate data
+        // TODO account for if caption and/or image are empty
         let imageRef;
         let result;
         try {
-            result = await db.all("INSERT INTO cute_cat_posts(user_id, caption, timestamp) VALUES(?, ?, ?) RETURNING id", [userId, caption, timestamp]);
+            result = await db.all("INSERT INTO cute_cat_posts(user_id, caption, timestamp) VALUES(?, ?, datetime('now')) RETURNING id", [userId, caption]);
             imageRef = result[0].id;
         }
         catch (err) {
@@ -220,13 +221,13 @@ io.on("connection", (socket) => {
         // TODO store image in folder naming it after imageRef
         let cuteCatFeed; // TODO set type as list of cuteCatPost objects
         try {
-            cuteCatFeed = await db.all("SELECT * FROM cute_cat_posts");
+            cuteCatFeed = await db.all("SELECT cute_cat_posts.id, username, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id");
         }
         catch (err) {
             let error = err;
             socket.emit(SOCKET_EVENTS.CUTE_CAT_ERROR, { error: error.toString() }); // TODO need space in front-end for listening to socket errors
         }
-        socket.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, { data: cuteCatFeed });
+        io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);
     });
 });
 //////END OF SOCKETS//////////

@@ -1,31 +1,44 @@
-
 nav {
-    display: flex;
-    align-items: center;
-    color: #fff;
-    padding: 20px 0;
- 
-  }
-  
-  nav a {
-    display: inline-block;
-    padding: 10px 20px;
-    color: black;
-    text-decoration: none;
-    transition: background-color 0.3s;
-  }
-  
-  nav a:hover {
-    background-color: #342d17;
-    color: white;
-  }
-
-.cat-logo {
-    height: 100px;
-    width: 100px;
-    float: left;
-    margin-top: -20px;
-    margin-left:30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fff;
+  padding: 5px 0;
 }
 
+.nav-links {
+  display: flex;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+nav a {
+  display: inline-block;
+  padding: 10px 20px;
+  color: black;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+nav a:hover {
+  background-color: #342d17;
+  color: white;
+}
+
+.cat-logo {
+  height: 100px;
+  width: 100px;
+  margin-top: 0px;
+  margin-left:80px;
   
+}
+
+.mange-cat {
+  margin-left: 0px;
+  height: 40px;
+  
+}
+
+.profile-section {
+  margin-right: 80px;
+}

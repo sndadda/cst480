@@ -183,7 +183,7 @@ app.post("/api/logout", async (req, res) => {
 });
 
 app.get("/api/cuteCatPosts", authorize, async (req, res) => {
-  let result; // TODO create type for CuteCatPosts
+  let result: utils.CuteCatPost[];
   try {
     result = await db.all(
       "SELECT cute_cat_posts.id, username, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"

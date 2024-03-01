@@ -177,7 +177,7 @@ app.post("/api/logout", async (req, res) => {
     return res.status(204).clearCookie("token", cookieOptions).json();
 });
 app.get("/api/cuteCatPosts", authorize, async (req, res) => {
-    let result; // TODO create type for CuteCatPosts
+    let result;
     try {
         result = await db.all("SELECT cute_cat_posts.id, username, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id");
     }

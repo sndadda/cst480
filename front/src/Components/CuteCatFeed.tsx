@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { socket } from "../socket.tsx";
 import SOCKET_EVENTS from "../socketEnums.js";
-import { CuteCatPost } from "./utils.ts";
+import { CuteCatPost, getServerErrorMessages } from "./utils.ts";
+import axios from "axios";
 
 function CuteCatFeed() {
     let [messages, setMessages] = useState<string[]>([]);
@@ -10,6 +11,22 @@ function CuteCatFeed() {
         caption: "",
     });
     let [posts, setPosts] = useState<CuteCatPost[]>([]); // TODO create type for list of posts
+
+    useEffect(() => {
+        (async () => {
+            try {
+                let {
+                    data: { cuteCatPosts },
+                } = await axios.get<{ cuteCatPosts: CuteCatPost[] }>(
+                    "/api/cuteCatPosts"
+                );
+                setPosts(cuteCatPosts);
+                setMessages([]);
+            } catch (error) {
+                setMessages(getServerErrorMessages(error));
+            }
+        })();
+    }, []);
 
     useEffect(() => {
         // TODO get all the posts

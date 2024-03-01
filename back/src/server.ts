@@ -182,6 +182,19 @@ app.post("/api/logout", async (req, res) => {
   return res.status(204).clearCookie("token", cookieOptions).json();
 });
 
+app.get("/api/cuteCatPosts", authorize, async (req, res) => {
+  let result; // TODO create type for CuteCatPosts
+  try {
+    result = await db.all(
+      "SELECT cute_cat_posts.id, username, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
+    );
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
+  return res.status(200).json({ cuteCatPosts: result });
+});
+
 //////START OF SOCKETS//////////
 
 io.on("connection", (socket) => {

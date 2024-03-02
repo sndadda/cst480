@@ -196,8 +196,10 @@ io.use(async (socket, next) => {
     else {
         let token = socket.handshake.headers.cookie.slice(6);
         let result = [];
+        let username = "";
         try {
             result = await db.all("SELECT * FROM tokens WHERE token=?", [token]);
+            username = result[0].username;
         }
         catch (err) {
             let error = err;
@@ -206,7 +208,6 @@ io.use(async (socket, next) => {
         if (result.length === 0) {
             next(new Error("Unauthorized."));
         }
-        let { username } = result[0];
         let userId = 0;
         try {
             result = await db.all("SELECT id FROM users WHERE username=?", [
@@ -251,20 +252,30 @@ io.on("connection", (socket) => {
     });
     /* Cute Cat Post Socket Events */
     socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {
-        let { image, caption } = data; // TODO zod validate data
-        // TODO account for if caption and/or image are empty
+        let { image, caption } = data;
         let cuteCatFeed = [];
         let imageRef;
         let result;
         try {
-            result = await db.all("INSERT INTO cute_cat_posts(user_id, caption, timestamp) VALUES(?, ?, datetime('now')) RETURNING id", [userId, caption]);
-            imageRef = result[0].id; // TODO store image in folder naming it after imageRef
-            cuteCatFeed = await db.all("SELECT cute_cat_posts.id, username, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id");
-            io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);
+            if (!image) {
+                throw new Error("Must upload an image to post.");
+            }
+            try {
+                result = await db.all("INSERT INTO cute_cat_posts(user_id, caption, timestamp) VALUES(?, ?, datetime('now')) RETURNING id", [userId, caption]);
+                imageRef = result[0].id; // TODO store image in folder naming it after imageRef
+                cuteCatFeed = await db.all("SELECT cute_cat_posts.id, username, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id");
+                io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);
+            }
+            catch (err) {
+                let error = err;
+                socket.emit(SOCKET_EVENTS.CUTE_CAT_ERROR, { error: error.toString() }); // TODO need space in front-end for listening to socket errors
+            }
         }
         catch (err) {
             let error = err;
-            socket.emit(SOCKET_EVENTS.CUTE_CAT_ERROR, { error: error.toString() }); // TODO need space in front-end for listening to socket errors
+            io.to(socket.id).emit(SOCKET_EVENTS.CUTE_CAT_ERROR, {
+                error: error.toString(),
+            });
         }
     });
 });

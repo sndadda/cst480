@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { socket } from "../socket.tsx";
 import SOCKET_EVENTS from "../socketEnums.js";
-import { CuteCatPost, getServerErrorMessages } from "./utils.ts";
+import { CuteCatPost, getAxiosErrorMessages } from "./utils.ts";
 import axios from "axios";
 
 function CuteCatFeed() {
@@ -23,7 +23,7 @@ function CuteCatFeed() {
                 setPosts(cuteCatPosts);
                 setMessages([]);
             } catch (error) {
-                setMessages(getServerErrorMessages(error));
+                setMessages(getAxiosErrorMessages(error));
             }
         })();
     }, []);
@@ -37,24 +37,14 @@ function CuteCatFeed() {
             if (!data) {
                 setMessages([]);
             } else {
-                let errors = messages;
-                errors.push(data.error);
-                setMessages(errors);
+                setMessages([data.error]);
             }
         });
     }, [socket]);
 
     let handlePost = () => {
+        setMessages([]);
         socket.emit(SOCKET_EVENTS.CUTE_CAT_POST, newPost);
-        socket.on(SOCKET_EVENTS.CUTE_CAT_ERROR, (data) => {
-            if (!data) {
-                setMessages([]);
-            } else {
-                let errors = messages;
-                errors.push(data.error);
-                setMessages(errors);
-            }
-        });
     };
 
     let feed = (

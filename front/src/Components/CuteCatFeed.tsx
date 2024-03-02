@@ -30,7 +30,6 @@ function CuteCatFeed() {
     }, []);
 
     useEffect(() => {
-        // TODO get all the posts
         socket.on(SOCKET_EVENTS.CUTE_CAT_UPDATE, (data) => {
             setPosts(data);
         });

@@ -62,6 +62,7 @@ function getServerErrorMessages(err: unknown): string[] {
 interface CuteCatPost {
     id: number;
     username: string;
+    image: string;
     likes: number;
     caption: string;
     timestamp: string;

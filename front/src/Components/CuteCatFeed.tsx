@@ -3,14 +3,15 @@ import { socket } from "../socket.tsx";
 import SOCKET_EVENTS from "../socketEnums.js";
 import { CuteCatPost, getAxiosErrorMessages } from "./utils.ts";
 import axios from "axios";
+import "./CuteCatFeed.css";
 
 function CuteCatFeed() {
     let [messages, setMessages] = useState<string[]>([]);
     let [newPost, setNewPost] = useState({
-        image: "",
+        buffer: null,
         caption: "",
     });
-    let [posts, setPosts] = useState<CuteCatPost[]>([]); // TODO create type for list of posts
+    let [posts, setPosts] = useState<CuteCatPost[]>([]);
 
     useEffect(() => {
         (async () => {
@@ -45,15 +46,24 @@ function CuteCatFeed() {
     let handlePost = () => {
         setMessages([]);
         socket.emit(SOCKET_EVENTS.CUTE_CAT_POST, newPost);
+        setNewPost({
+            buffer: null,
+            caption: "",
+        });
     };
 
     let feed = (
         <div className="cute-cat-feed">
             <h1>Cute Cat Feed:</h1>
-            {posts.map(({ id, username, likes, caption, timestamp }) => (
+            {posts.map(({ id, username, image, likes, caption, timestamp }) => (
                 <div key={id}>
                     {id}: Posted by: '{username}', Likes: '{likes}', Caption: '
                     {caption}', Date/Time: '{timestamp}'
+                    <img
+                        className="cute-cat-image"
+                        style={{ width: "100px", height: "100px" }}
+                        src={`data:image/jpeg;base64,${image}`}
+                    />
                 </div>
             ))}
         </div>
@@ -65,10 +75,14 @@ function CuteCatFeed() {
             <label>Upload an image: </label>
             <input
                 type="file"
-                value={newPost.image}
-                id="image"
+                id="buffer"
                 onChange={(e) => {
-                    setNewPost({ ...newPost, [e.target.id]: e.target.value });
+                    setNewPost({
+                        ...newPost,
+                        [e.target.id]: e.target.files
+                            ? e.target.files[0]
+                            : null,
+                    });
                 }}
             ></input>
             <input

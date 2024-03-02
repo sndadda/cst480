@@ -187,7 +187,7 @@ app.get("/api/cuteCatPosts", authorize, async (req, res) => {
   let result: utils.CuteCatPost[];
   try {
     result = await db.all(
-      "SELECT cute_cat_posts.id, username, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
+      "SELECT cute_cat_posts.id, username, image, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
     );
   } catch (err) {
     let error = err as Object;
@@ -273,27 +273,33 @@ io.on("connection", (socket) => {
 
   /* Cute Cat Post Socket Events */
   socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {
-    let { image, caption } = data;
+    let { buffer, caption } = data;
     let cuteCatFeed: utils.CuteCatPost[] = [];
     let imageRef: number;
     let result;
+    let base64image = "";
     try {
-      if (!image) {
+      if (!buffer) {
         throw new Error("Must upload an image to post.");
       }
       try {
-        result = await db.all(
-          "INSERT INTO cute_cat_posts(user_id, caption, timestamp) VALUES(?, ?, datetime('now')) RETURNING id",
-          [userId, caption]
+        base64image = btoa(
+          new Uint8Array(buffer).reduce(function (data, byte) {
+            return data + String.fromCharCode(byte);
+          }, "")
         );
-        imageRef = result[0].id; // TODO store image in folder naming it after imageRef
+        result = await db.all(
+          "INSERT INTO cute_cat_posts(user_id, image, caption, timestamp) VALUES(?, ?, ?, datetime('now')) RETURNING id",
+          [userId, base64image, caption]
+        );
+        imageRef = result[0].id;
         cuteCatFeed = await db.all(
-          "SELECT cute_cat_posts.id, username, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
+          "SELECT cute_cat_posts.id, username, image, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
         );
         io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);
       } catch (err) {
         let error = err as Object;
-        socket.emit(SOCKET_EVENTS.CUTE_CAT_ERROR, { error: error.toString() }); // TODO need space in front-end for listening to socket errors
+        socket.emit(SOCKET_EVENTS.CUTE_CAT_ERROR, { error: error.toString() });
       }
     } catch (err) {
       let error = err as Object;

@@ -46,6 +46,7 @@ CREATE TABLE markers (
 CREATE TABLE cute_cat_posts (
     id INTEGER PRIMARY KEY,
     user_id INTEGER,
+    image BLOB,
     likes INT DEFAULT 0,
     caption TEXT,
     timestamp TIMESTAMP,

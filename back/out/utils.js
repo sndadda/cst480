@@ -10,6 +10,7 @@ let userBodySchema = z.object({
 let cuteCatPostSchema = z.object({
     id: z.number().gte(1),
     username: z.string().min(3),
+    image: z.any(),
     likes: z.number(),
     caption: z.string(),
     timestamp: z.string(),

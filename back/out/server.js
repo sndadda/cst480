@@ -282,6 +282,32 @@ io.on("connection", (socket) => {
             });
         }
     });
+    socket.on(SOCKET_EVENTS.CUTE_CAT_LIKE, async (data) => {
+        let { postId, increment } = data;
+        let cuteCatFeed = [];
+        let result;
+        let likes;
+        try {
+            result = await db.all("SELECT likes FROM cute_cat_posts WHERE id=?", [
+                postId,
+            ]);
+            likes = result[0].likes;
+            likes += increment;
+            await db.all("UPDATE cute_cat_posts SET likes=? WHERE id=?", [
+                likes,
+                postId,
+            ]);
+            cuteCatFeed = await db.all("SELECT cute_cat_posts.id, username, image, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id");
+            io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);
+        }
+        catch (err) {
+            let error = err;
+            io.to(socket.id).emit(SOCKET_EVENTS.CUTE_CAT_ERROR, {
+                error: error.toString(),
+            });
+        }
+    });
+    /* End of Cute Cat Post Socket Events */
 });
 //////END OF SOCKETS//////////
 // run server

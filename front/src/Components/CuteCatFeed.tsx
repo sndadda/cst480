@@ -52,6 +52,14 @@ function CuteCatFeed() {
         });
     };
 
+    function handleLike(postId: number) {
+        setMessages([]);
+        socket.emit(SOCKET_EVENTS.CUTE_CAT_LIKE, {
+            postId: postId,
+            increment: 1,
+        });
+    }
+
     let feed = (
         <div className="cute-cat-feed">
             <h1>Cute Cat Feed:</h1>
@@ -64,6 +72,14 @@ function CuteCatFeed() {
                         style={{ width: "100px", height: "100px" }}
                         src={`data:image/jpeg;base64,${image}`}
                     />
+                    <button
+                        onClick={() => {
+                            handleLike(id);
+                            // TODO set button to disabled
+                        }}
+                    >
+                        Like Post
+                    </button>
                 </div>
             ))}
         </div>

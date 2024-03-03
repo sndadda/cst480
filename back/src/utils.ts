@@ -11,6 +11,16 @@ let userBodySchema = z.object({
 });
 type User = z.infer<typeof userBodySchema>;
 
+let cuteCatPostSchema = z.object({
+  id: z.number().gte(1),
+  username: z.string().min(3),
+  image: z.any(),
+  likes: z.number(),
+  caption: z.string(),
+  timestamp: z.string(),
+});
+type CuteCatPost = z.infer<typeof cuteCatPostSchema>;
+
 let dummyUsers: User[] = [
   {
     username: "francisco",
@@ -29,4 +39,4 @@ let dummyUsers: User[] = [
   },
 ];
 
-export { userBodySchema, User, dummyUsers };
+export { userBodySchema, User, dummyUsers, cuteCatPostSchema, CuteCatPost };

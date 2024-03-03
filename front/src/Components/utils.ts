@@ -59,4 +59,14 @@ function getServerErrorMessages(err: unknown): string[] {
     return error.response.data.errors;
 }
 
+interface CuteCatPost {
+    id: number;
+    username: string;
+    image: string;
+    likes: number;
+    caption: string;
+    timestamp: string;
+}
+
 export { getServerErrorMessages, getAxiosErrorMessages };
+export type { CuteCatPost };

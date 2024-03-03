@@ -6,19 +6,23 @@ let userBodySchema = z.object({
     password: z
         .string()
         .min(8, { message: "Password must be at least 8 characters long." }),
+    name: z.string()
 });
 let dummyUsers = [
     {
         username: "francisco",
         password: "Francisco123#",
+        name: "Francisco",
     },
     {
         username: "sandra",
         password: "Sandra123#",
+        name: "Sandra",
     },
     {
         username: "kevin",
         password: "Kevin123#",
+        name: "Kevin",
     },
 ];
 export { userBodySchema, dummyUsers };

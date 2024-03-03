@@ -1,6 +1,14 @@
 import mapboxgl from 'mapbox-gl';
 import "mapbox-gl/dist/mapbox-gl.css";
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import Avatar from '@mui/material/Avatar';
+import Modal from '@mui/material/Modal';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import Fade from '@mui/material/Fade';
+import Divider from '@mui/material/Divider';
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoic25kYWRkYTYzIiwiYSI6ImNsc3RtdnZrODBxaDkya21xdDUyMzVseWYifQ.1LO5AE0xSXX9ndA9l1lcZw'
 
@@ -8,6 +16,7 @@ function CatMap() {
     const mapContainer = useRef<HTMLDivElement | null>(null);
     const map = useRef<mapboxgl.Map | null>(null);
     const geolocate = useRef<mapboxgl.GeolocateControl | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         if (map.current) return; // initialize map only once
@@ -50,7 +59,9 @@ function CatMap() {
     }, []);
 
     return (
-        <div ref={mapContainer} style={{ width: '96%', height: '100vh' }} />
+        <div ref={mapContainer} style={{ width: '96%', height: '100vh' }}>
+          
+        </div>
     );
 }
 

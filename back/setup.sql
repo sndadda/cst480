@@ -1,7 +1,8 @@
 CREATE TABLE users (
     id INTEGER PRIMARY KEY,
     username TEXT,
-    password TEXT
+    password TEXT,
+    name TEXT
 );
 
 CREATE TABLE tokens (

@@ -19,13 +19,18 @@ function Header({ setRefresh }: any) {
     return (
         <>
             <img src="/cat_globe.jpg" className="cat-logo" />
-            <Link to="/">Map</Link>
-            <Link to="/feed">Feed</Link>
-            <Link to="/cuteCatFeed">CuteCatFeed</Link>
-            <Link to="/profile">Profile</Link>
-            <Link to="/" onClick={handleLogout}>
-                Logout
-            </Link>
+            <img src="/mange_cat.png" className="mange-cat" />
+            <div className="nav-links">
+                <Link to="/">Map</Link>
+                <Link to="/feed">Feed</Link>
+                <Link to="/cuteCatFeed">Cute Cats</Link>
+            </div>
+            <div className="profile-section">
+                <Link to="/profile">Profile</Link>
+                <Link to="/" onClick={handleLogout}>
+                    Logout
+                </Link>
+            </div>
         </>
     );
 }

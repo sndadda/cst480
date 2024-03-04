@@ -37,7 +37,6 @@ CREATE TABLE comments (
 CREATE TABLE markers (
     id INTEGER PRIMARY KEY,
     user_id INTEGER,
-    name VARCHAR(255),
     latitude FLOAT,
     longitude FLOAT,
     FOREIGN KEY (user_id) REFERENCES users(id)

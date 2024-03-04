@@ -236,17 +236,31 @@ io.on("connection", (socket) => {
 
   socket.on(SOCKET_EVENTS.CREATE_POST, async (data) => {
     try {
-      const { user_id, marker_id, subject, content, image } = data;
+      const { marker_id, subject, content, image } = data;
+
+      await db.run(
+        "INSERT INTO markers (user_id, latitude, longitude) VALUES (?, ?, ?, ?)",
+        [userId, data.marker_id.lat, data.marker_id.lng]
+      );
 
       const result = await db.all(
         "INSERT INTO posts (user_id, marker_id, subject, content, timestamp, image) VALUES (?, ?, ?, ?, DATETIME('now'), ?) RETURNING id",
-        [user_id, marker_id, subject, content, image]
+        [userId, marker_id, subject, content, image]
       );
 
       const insertedPost = await db.all("SELECT * FROM posts WHERE id = ?", [
         result[0].id,
       ]);
       io.emit(SOCKET_EVENTS.UPDATE_FEED, { message: insertedPost });
+    } catch (error) {
+      socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
+    }
+  });
+
+  socket.on(SOCKET_EVENTS.FETCH_MARKERS, async () => {
+    try {
+      const markers = await db.all("SELECT * FROM markers");
+      socket.emit(SOCKET_EVENTS.UPDATE_MARKERS, { markers });
     } catch (error) {
       socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
     }

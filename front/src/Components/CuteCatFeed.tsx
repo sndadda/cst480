@@ -87,7 +87,7 @@ function CuteCatFeed() {
     let postForm = (
         <div className="cute-cat-post-form">
             <h1>Post Your Cat:</h1>
-            <label>Upload an image: </label>
+            <p>Upload an image:</p>
             <input
                 type="file"
                 id="buffer"
@@ -100,29 +100,34 @@ function CuteCatFeed() {
                     });
                 }}
             ></input>
-            <input
-                type="textarea"
-                value={newPost.caption}
-                placeholder="Caption"
-                id="caption"
-                onChange={(e) => {
-                    setNewPost({ ...newPost, [e.target.id]: e.target.value });
-                }}
-            ></input>
+            <div className="caption-box">
+                <textarea
+                    value={newPost.caption}
+                    placeholder="Caption"
+                    id="caption"
+                    onChange={(e) => {
+                        setNewPost({
+                            ...newPost,
+                            [e.target.id]: e.target.value,
+                        });
+                    }}
+                    rows={2}
+                ></textarea>
+            </div>
             <button onClick={handlePost}>Post</button>
+            <div className="error-message">
+                {messages.map((message, i) => (
+                    <div key={i}>{message}</div>
+                ))}
+            </div>
         </div>
     );
 
     return (
         <>
-            <div id="cute-cat-page">
+            <div id="cute-cat-page-container">
                 {feed}
                 {postForm}
-                <div className="error-message">
-                    {messages.map((message, i) => (
-                        <div key={i}>{message}</div>
-                    ))}
-                </div>
             </div>
         </>
     );

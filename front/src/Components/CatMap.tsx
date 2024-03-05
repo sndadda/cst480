@@ -60,7 +60,6 @@ function CatMap() {
           trackUserLocation: true
         });
         map.current.addControl(geolocate.current, 'top-right');
-        socket.emit(SOCKET_EVENTS.FETCH_MARKERS);
 
         map.current.on('click', (event) => {
           // If the map is not zoomed in enough

@@ -4,6 +4,7 @@ import SOCKET_EVENTS from "../socketEnums.js";
 import { CuteCatPost, getAxiosErrorMessages } from "./utils.ts";
 import axios from "axios";
 import { FaUserCircle } from "react-icons/fa";
+import { FaHeart } from "react-icons/fa6";
 import "./CuteCatFeed.css";
 
 function CuteCatFeed() {
@@ -14,6 +15,7 @@ function CuteCatFeed() {
     });
     let [posts, setPosts] = useState<CuteCatPost[]>([]);
 
+    // TODO figure out why page only works if manually refreshed at first
     useEffect(() => {
         (async () => {
             try {
@@ -71,28 +73,26 @@ function CuteCatFeed() {
                                 <FaUserCircle className="user-profile-pic" />
                                 <p className="username">{username}</p>
                             </div>
-                            <img
-                                className="cute-cat-image"
-                                style={{ width: "100px", height: "100px" }}
-                                src={`data:image/jpeg;base64,${image}`}
-                            />
+                            <div className="cute-cat-image">
+                                <img src={`data:image/jpeg;base64,${image}`} />
+                            </div>
                             <div className="interactions">
-                                <button
+                                <FaHeart
                                     className="like-button"
-                                    onClick={() => {
+                                    onClick={(e) => {
                                         handleLike(id);
                                         // TODO set button to disabled
                                     }}
-                                >
-                                    Like Post
-                                </button>
+                                />
                             </div>
                             <div className="likes">{likes} likes</div>
                             <div className="caption-box">
                                 <p className="username">{username}</p>
                                 <p className="caption">{caption}</p>
                             </div>
-                            <div className="time-posted">{timestamp}</div>
+                            <div className="time-stamp">
+                                <div className="time">{timestamp}</div>
+                            </div>
                         </div>
                     )
                 )}

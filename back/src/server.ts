@@ -25,6 +25,7 @@ let io = new Server(server, {
     methods: ["GET", "POST"],
     credentials: true,
   },
+  maxHttpBufferSize: 1e8, // 100 MB
 });
 
 // create database "connection"

@@ -263,9 +263,15 @@ io.on("connection", (socket) => {
                 throw new Error("Must upload an image to post.");
             }
             try {
-                base64image = btoa(new Uint8Array(buffer).reduce(function (data, byte) {
+                // https://stackoverflow.com/questions/9267899/arraybuffer-to-base64-encoded-string/42334410#42334410
+                // base64image = btoa(
+                //   new Uint8Array(buffer).reduce(function (data, byte) {
+                //     return data + String.fromCharCode(byte);
+                //   }, "")
+                // );
+                base64image = Buffer.from(new Uint8Array(buffer).reduce(function (data, byte) {
                     return data + String.fromCharCode(byte);
-                }, ""));
+                }, ""), "binary").toString("base64");
                 result = await db.all("INSERT INTO cute_cat_posts(user_id, image, caption, timestamp) VALUES(?, ?, ?, datetime('now')) RETURNING id", [userId, base64image, caption]);
                 imageRef = result[0].id;
                 cuteCatFeed = await db.all("SELECT cute_cat_posts.id, username, image, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id");

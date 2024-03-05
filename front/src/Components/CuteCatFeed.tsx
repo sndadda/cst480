@@ -3,6 +3,7 @@ import { socket } from "../socket.tsx";
 import SOCKET_EVENTS from "../socketEnums.js";
 import { CuteCatPost, getAxiosErrorMessages } from "./utils.ts";
 import axios from "axios";
+import { FaUserCircle } from "react-icons/fa";
 import "./CuteCatFeed.css";
 
 function CuteCatFeed() {
@@ -62,25 +63,40 @@ function CuteCatFeed() {
     let feed = (
         <div className="cute-cat-feed">
             <h1>Cute Cat Feed:</h1>
-            {posts.map(({ id, username, image, likes, caption, timestamp }) => (
-                <div key={id}>
-                    {id}: Posted by: '{username}', Likes: '{likes}', Caption: '
-                    {caption}', Date/Time: '{timestamp}'
-                    <img
-                        className="cute-cat-image"
-                        style={{ width: "100px", height: "100px" }}
-                        src={`data:image/jpeg;base64,${image}`}
-                    />
-                    <button
-                        onClick={() => {
-                            handleLike(id);
-                            // TODO set button to disabled
-                        }}
-                    >
-                        Like Post
-                    </button>
-                </div>
-            ))}
+            <div className="cute-cat-posts">
+                {posts.map(
+                    ({ id, username, image, likes, caption, timestamp }) => (
+                        <div key={id} className="cute-cat-single-post">
+                            <div className="user-profile">
+                                <FaUserCircle className="user-profile-pic" />
+                                <p className="username">{username}</p>
+                            </div>
+                            <img
+                                className="cute-cat-image"
+                                style={{ width: "100px", height: "100px" }}
+                                src={`data:image/jpeg;base64,${image}`}
+                            />
+                            <div className="interactions">
+                                <button
+                                    className="like-button"
+                                    onClick={() => {
+                                        handleLike(id);
+                                        // TODO set button to disabled
+                                    }}
+                                >
+                                    Like Post
+                                </button>
+                            </div>
+                            <div className="likes">{likes} likes</div>
+                            <div className="caption-box">
+                                <p className="username">{username}</p>
+                                <p className="caption">{caption}</p>
+                            </div>
+                            <div className="time-posted">{timestamp}</div>
+                        </div>
+                    )
+                )}
+            </div>
         </div>
     );
 

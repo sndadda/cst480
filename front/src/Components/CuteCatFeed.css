@@ -88,5 +88,20 @@
 }
 
 .cute-cat-feed {
+    background-color: darkblue;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+    padding-top: 30px;
+}
+
+.cute-cat-feed h1 {
+    font-size: 36px;
+    text-align: center;
+}
+
+.cute-cat-feed .cute-cat-posts {
     background-color: palevioletred;
+    display: flex;
+    flex-direction: column-reverse;
 }

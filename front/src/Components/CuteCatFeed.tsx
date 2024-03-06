@@ -3,6 +3,8 @@ import { socket } from "../socket.tsx";
 import SOCKET_EVENTS from "../socketEnums.js";
 import { CuteCatPost, getAxiosErrorMessages } from "./utils.ts";
 import axios from "axios";
+import { FaUserCircle } from "react-icons/fa";
+import { FaHeart } from "react-icons/fa6";
 import "./CuteCatFeed.css";
 
 function CuteCatFeed() {
@@ -13,6 +15,7 @@ function CuteCatFeed() {
     });
     let [posts, setPosts] = useState<CuteCatPost[]>([]);
 
+    // TODO figure out why page only works if manually refreshed at first
     useEffect(() => {
         (async () => {
             try {
@@ -62,32 +65,45 @@ function CuteCatFeed() {
     let feed = (
         <div className="cute-cat-feed">
             <h1>Cute Cat Feed:</h1>
-            {posts.map(({ id, username, image, likes, caption, timestamp }) => (
-                <div key={id}>
-                    {id}: Posted by: '{username}', Likes: '{likes}', Caption: '
-                    {caption}', Date/Time: '{timestamp}'
-                    <img
-                        className="cute-cat-image"
-                        style={{ width: "100px", height: "100px" }}
-                        src={`data:image/jpeg;base64,${image}`}
-                    />
-                    <button
-                        onClick={() => {
-                            handleLike(id);
-                            // TODO set button to disabled
-                        }}
-                    >
-                        Like Post
-                    </button>
-                </div>
-            ))}
+            <div className="cute-cat-posts">
+                {posts.map(
+                    ({ id, username, image, likes, caption, timestamp }) => (
+                        <div key={id} className="cute-cat-single-post">
+                            <div className="user-profile">
+                                <FaUserCircle className="user-profile-pic" />
+                                <p className="username">{username}</p>
+                            </div>
+                            <div className="cute-cat-image">
+                                <img src={`data:image/jpeg;base64,${image}`} />
+                            </div>
+                            <div className="interactions">
+                                <FaHeart
+                                    className="like-button"
+                                    onClick={(e) => {
+                                        handleLike(id);
+                                        // TODO set button to disabled
+                                    }}
+                                />
+                            </div>
+                            <div className="likes">{likes} likes</div>
+                            <div className="caption-box">
+                                <p className="username">{username}</p>
+                                <p className="caption">{caption}</p>
+                            </div>
+                            <div className="time-stamp">
+                                <div className="time">{timestamp}</div>
+                            </div>
+                        </div>
+                    )
+                )}
+            </div>
         </div>
     );
 
     let postForm = (
         <div className="cute-cat-post-form">
             <h1>Post Your Cat:</h1>
-            <label>Upload an image: </label>
+            <p>Upload an image:</p>
             <input
                 type="file"
                 id="buffer"
@@ -100,29 +116,34 @@ function CuteCatFeed() {
                     });
                 }}
             ></input>
-            <input
-                type="textarea"
-                value={newPost.caption}
-                placeholder="Caption"
-                id="caption"
-                onChange={(e) => {
-                    setNewPost({ ...newPost, [e.target.id]: e.target.value });
-                }}
-            ></input>
+            <div className="caption-box">
+                <textarea
+                    value={newPost.caption}
+                    placeholder="Caption"
+                    id="caption"
+                    onChange={(e) => {
+                        setNewPost({
+                            ...newPost,
+                            [e.target.id]: e.target.value,
+                        });
+                    }}
+                    rows={2}
+                ></textarea>
+            </div>
             <button onClick={handlePost}>Post</button>
+            <div className="error-message">
+                {messages.map((message, i) => (
+                    <div key={i}>{message}</div>
+                ))}
+            </div>
         </div>
     );
 
     return (
         <>
-            <div id="cute-cat-page">
+            <div id="cute-cat-page-container">
                 {feed}
                 {postForm}
-                <div className="error-message">
-                    {messages.map((message, i) => (
-                        <div key={i}>{message}</div>
-                    ))}
-                </div>
             </div>
         </>
     );

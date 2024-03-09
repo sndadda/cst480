@@ -15,6 +15,21 @@ let cuteCatPostSchema = z.object({
     caption: z.string(),
     timestamp: z.string(),
 });
+let markerSchema = z.object({
+    id: z.number().gte(1),
+    latitude: z.number(),
+    longitude: z.number(),
+});
+let mapPostSchema = z.object({
+    id: z.number().gte(1),
+    username: z.string().min(3),
+    marker_id: z.number().gte(1),
+    subject: z.string().max(255),
+    content: z.string(),
+    timestamp: z.string(),
+    likes: z.number(),
+    image: z.any(),
+});
 let dummyUsers = [
     {
         username: "francisco",
@@ -29,4 +44,4 @@ let dummyUsers = [
         password: "Kevin123#",
     },
 ];
-export { userBodySchema, dummyUsers, cuteCatPostSchema };
+export { userBodySchema, dummyUsers, cuteCatPostSchema, mapPostSchema, markerSchema };

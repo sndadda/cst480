@@ -11,31 +11,31 @@ import Fade from '@mui/material/Fade';
 import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
+import axios from 'axios';
+import { Marker, MapPost, getAxiosErrorMessages } from './utils.ts';
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoic25kYWRkYTYzIiwiYSI6ImNsc3RtdnZrODBxaDkya21xdDUyMzVseWYifQ.1LO5AE0xSXX9ndA9l1lcZw'
-
 function CatMap() {
-  const [data, setData] = useState({
-        user_id: '',
-        marker_id: '',
-        subject: '',
-        content: '',
-        image: null,
-    });
+ 
     const [commentData, setCommentData] = useState({
-        post_id: '',
         parent_comment_id: '',
-        user_id: '',
         content: ''
     });
+    
     const mapContainer = useRef<HTMLDivElement | null>(null);
+    const [markers, setMarkers] = useState<Marker[]>([]);
     // Add a new state for the last created marker
     const [lastMarker, setLastMarker] = useState<mapboxgl.Marker | null>(null);
     const map = useRef<mapboxgl.Map | null>(null);
     const geolocate = useRef<mapboxgl.GeolocateControl | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [clickedLocation, setClickedLocation] = useState<mapboxgl.LngLat | null>(null);
-    const [formData, setFormData] = useState({ user_id: '', marker_id: '', subject: '', content: '', image: null });
+    const [formData, setFormData] = useState<{subject: string, content: string, image: File | null}>({subject: '', content: '', image: null });
+    const [markerPos, setMarkerPos] = useState({ latitude: 0, longitude: 0 });
+    const [isPostsModalOpen, setIsPostsModalOpen] = useState(false);
+    const [isPostsOpen, setIsPostsOpen] = useState(false);
+    const [selectedPosts, setSelectedPosts] = useState<MapPost[]>([]);
+    const [lastMarkerId, setLastMarkerId] = useState(0);
+    let [posts, setPosts] = useState<MapPost[]>([]);
 
     useEffect(() => {
         if (map.current) return; // initialize map only once
@@ -46,7 +46,7 @@ function CatMap() {
           zoom: 0,
           pitch: 0, // tilt the map
           bearing: 0, // rotate the map
-          antialias: true // this is important for the 3D effect
+          antialias: true // 3D effect
         });
 
         // Add navigation control (the +/- zoom buttons)
@@ -74,53 +74,92 @@ function CatMap() {
             .setLngLat(event.lngLat)
             .addTo(map.current!);
 
-          setLastMarker(marker);
           // Open the modal and save the clicked location
           setIsModalOpen(true);
-          setClickedLocation(event.lngLat);
+          setMarkerPos({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
         });
-    }, []);
+       
 
-    useEffect(() => {
-        socket.on('UPDATE_FEED', (data) => {
-            // Create a new marker and add it to the map at the post's location
-            new mapboxgl.Marker()
-                .setLngLat([data.message.marker_id.lng, data.message.marker_id.lat])
-                .setPopup(new mapboxgl.Popup().setHTML(`<h1>${data.message.subject}</h1><p>${data.message.content}</p>`)) // add a popup
-                .addTo(map.current!);
+        socket.emit(SOCKET_EVENTS.FETCH_MARKERS);
+
+        socket.on(SOCKET_EVENTS.MARKER_CREATED, (marker) => {
+
+          const mapboxMarker = new mapboxgl.Marker()
+          .setLngLat([marker.longitude, marker.latitude])
+          .addTo(map.current!);
+
+          // Associate a click event with the marker
+          mapboxMarker.getElement().addEventListener('click', () => {
+          // Fetch the posts associated with the marker
+            socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
+          });
         });
 
-        return () => {
-            socket.off('UPDATE_FEED');
-        };
-    }, []);
-      useEffect(() => {
-        socket.on('RECEIVE_MARKERS', (markers: any[]) => {
-          markers.forEach((markerData: any) => {
-            new mapboxgl.Marker()
-              .setLngLat([markerData.lng, markerData.lat])
-              .setPopup(new mapboxgl.Popup().setHTML(`<h1>${markerData.subject}</h1><p>${markerData.content}</p>`)) // add a popup
+        socket.on(SOCKET_EVENTS.MARKERS_FETCHED, (markers: Marker[]) => {
+          setMarkers(markers);
+          markers.forEach((marker: Marker) => {
+            const mapboxMarker = new mapboxgl.Marker()
+              .setLngLat([marker.longitude, marker.latitude])
               .addTo(map.current!);
           });
         });
-      
-        return () => {
-          socket.off('RECEIVE_MARKERS');
-        };
-      }, []);
+
+       
+         
+    }, []);
+
+ 
 
     const handlePostClick = () => {
-        if (formData.content.trim()) {
-            socket.emit('CREATE_POST', {
-                marker_id: clickedLocation,
-                content: formData.content,
-            });
-            setIsModalOpen(false);
-        }
+      //console.log(markerPos);
+      
+      socket.emit(SOCKET_EVENTS.MARKER, markerPos);
+
+      socket.on(SOCKET_EVENTS.MARKER_CREATED, (marker) => {
+        // Update the marker_id of the post and emit the SOCKET_EVENTS.CREATE_MAP_POST event
+        const postData = { ...formData, marker_id: marker.id };
+
+      // Emit the SOCKET_EVENTS.CREATE_MAP_POST event with the post data
+        socket.emit(SOCKET_EVENTS.CREATE_MAP_POST, postData);
+        setFormData({ subject: '', content: '', image: null });
+      });
+      setIsModalOpen(false);
+
     };
 
     return (
         <div ref={mapContainer} style={{ width: '96%', height: '100vh' }}>
+          <Modal
+            open={isPostsModalOpen}
+            onClose={() => setIsPostsModalOpen(false)}
+            closeAfterTransition
+            BackdropProps={{
+              timeout: 500,
+            }}
+          >
+            <Fade in={isPostsModalOpen}>
+              <Box sx={{ position: 'relative', width: '50%', bgcolor: 'background.paper', p: 2, mx: 'auto', my: '10%', borderRadius: 2 }}>
+                <Button 
+                  sx={{ 
+                    position: 'absolute', 
+                    top: 0, 
+                    right: 0, 
+                    color: 'black', 
+                    fontSize: 'large' 
+                  }} 
+                  onClick={() => setIsPostsModalOpen(false)}
+                >X</Button>
+                {selectedPosts.map((post, index) => (
+                  <div key={index}>
+                    <h2>{post.subject}</h2>
+                    <p>{post.content}</p>
+            
+                  </div>
+                ))}
+              </Box>
+            </Fade>
+          </Modal>
+          
             <Modal
                 open={isModalOpen}
                 onClose={() => {
@@ -129,13 +168,8 @@ function CatMap() {
                     lastMarker.remove();
                     setLastMarker(null);
                   }
-                  setFormData({
-                    user_id: '',
-                    marker_id: '',
-                    subject: '',
-                    content: '',
-                    image: null,
-                });
+                
+                  setFormData({ subject: '', content: '', image: null });
                 }}
                 closeAfterTransition
                 BackdropProps={{
@@ -158,13 +192,8 @@ function CatMap() {
                                   lastMarker.remove();
                                   setLastMarker(null);
                               }
-                              setFormData({
-                                user_id: '',
-                                marker_id: '',
-                                subject: '',
-                                content: '',
-                                image: null,
-                            });
+                              setFormData({ subject: '', content: '', image: null });
+                            
                           }}
                         >X</Button>
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
@@ -222,6 +251,15 @@ function CatMap() {
                         '.MuiFilledInput-underline:before': { borderBottom: 'none' },
                         '.MuiFilledInput-underline:after': { borderBottom: 'none' }
                     }}
+                />
+                <input
+                  type="file"
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      image: e.target.files ? e.target.files[0] : null,
+                    });
+                  }}
                 />
                 <Button 
                     variant="contained" 

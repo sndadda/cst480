@@ -20,6 +20,25 @@ let cuteCatPostSchema = z.object({
 });
 type CuteCatPost = z.infer<typeof cuteCatPostSchema>;
 
+let markerSchema = z.object({
+  id: z.number().gte(1),
+  latitude: z.number(),
+  longitude: z.number(),
+});
+type Marker = z.infer<typeof markerSchema>;
+
+let mapPostSchema = z.object({
+  id: z.number().gte(1),
+  username: z.string().min(3),
+  marker_id: z.number().gte(1),
+  subject: z.string().max(255),
+  content: z.string(),
+  timestamp: z.string(),
+  likes: z.number(),
+  image: z.any(),
+});
+type MapPost = z.infer<typeof mapPostSchema>;
+
 let dummyUsers: User[] = [
   {
     username: "francisco",
@@ -36,4 +55,4 @@ let dummyUsers: User[] = [
   },
 ];
 
-export { userBodySchema, User, dummyUsers, cuteCatPostSchema, CuteCatPost };
+export { userBodySchema, User, dummyUsers, cuteCatPostSchema, CuteCatPost, mapPostSchema, MapPost, markerSchema, Marker };

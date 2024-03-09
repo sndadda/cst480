@@ -9,18 +9,6 @@ CREATE TABLE tokens (
     username TEXT
 );
 
-CREATE TABLE posts (
-    id INTEGER PRIMARY KEY,
-    user_id INTEGER,
-    marker_id VARCHAR(255),
-    subject VARCHAR(255),
-    content TEXT,
-    timestamp TIMESTAMP,
-    likes INT DEFAULT 0,
-    image BLOB,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
 CREATE TABLE comments (
     id INTEGER PRIMARY KEY,
     post_id INTEGER,
@@ -50,4 +38,17 @@ CREATE TABLE cute_cat_posts (
     caption TEXT,
     timestamp TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE posts (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    marker_id INTEGER,
+    subject VARCHAR(255),
+    content TEXT,
+    timestamp TIMESTAMP,
+    likes INT DEFAULT 0,
+    image BLOB,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (marker_id) REFERENCES markers(id)
 );

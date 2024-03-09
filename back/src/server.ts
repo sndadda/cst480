@@ -192,9 +192,37 @@ app.get("/api/cuteCatPosts", authorize, async (req, res) => {
     );
   } catch (err) {
     let error = err as Object;
+    console.error(error);
     return res.status(500).json({ error: error.toString() });
   }
   return res.status(200).json({ cuteCatPosts: result });
+});
+
+app.get("/api/markers", authorize, async (req, res) => {
+  let result: utils.Marker[];
+  try {
+    result = await db.all(
+      "SELECT markers.id, latitude, longitude FROM markers INNER JOIN users ON users.id = markers.user_id"
+    );
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
+  return res.status(200).json(result);
+});
+
+app.get("/api/posts", authorize, async (req, res) => {
+  let result: utils.MapPost[];
+  try {
+    result = await db.all(
+      "SELECT posts.id, username, subject, content, image, timestamp FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?",
+      [req.query.marker_id]
+    );
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
+  return res.status(200).json(result);
 });
 
 //////START OF SOCKETS//////////
@@ -239,11 +267,6 @@ io.on("connection", (socket) => {
     try {
       const { marker_id, subject, content, image } = data;
 
-      await db.run(
-        "INSERT INTO markers (user_id, latitude, longitude) VALUES (?, ?, ?, ?)",
-        [userId, data.marker_id.lat, data.marker_id.lng]
-      );
-
       const result = await db.all(
         "INSERT INTO posts (user_id, marker_id, subject, content, timestamp, image) VALUES (?, ?, ?, ?, DATETIME('now'), ?) RETURNING id",
         [userId, marker_id, subject, content, image]
@@ -258,14 +281,94 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on(SOCKET_EVENTS.FETCH_MARKERS, async () => {
+  socket.on(SOCKET_EVENTS.MARKER, async (data) => {
+    let { latitude, longitude } = data;
+    let marker: utils.Marker[] = [];
+    let result;
+    
     try {
-      const markers = await db.all("SELECT * FROM markers");
-      socket.emit(SOCKET_EVENTS.UPDATE_MARKERS, { markers });
-    } catch (error) {
-      socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
+      result = await db.all(
+        "INSERT INTO markers(user_id, latitude, longitude) VALUES (?, ?, ?) RETURNING id",
+        [userId, latitude, longitude]
+      );
+  
+      socket.emit(SOCKET_EVENTS.MARKER_CREATED, { id: result[0].id, latitude, longitude });
+  
+      let updatedMarkers: utils.Marker[];
+      updatedMarkers = await db.all(
+        "SELECT markers.id, latitude, longitude FROM markers INNER JOIN users ON users.id = markers.user_id"
+      );
+      io.emit(SOCKET_EVENTS.MARKERS_FETCHED, updatedMarkers);
+    } catch (err) {
+      let error = err as Object;
+      socket.emit(SOCKET_EVENTS.MARKER_ERROR, { error: error.toString() });
     }
   });
+  
+  //TODO: fetch markers
+
+  socket.on(SOCKET_EVENTS.FETCH_MARKERS, async () => {
+    let result: utils.Marker[];
+    try {
+      result = await db.all(
+        "SELECT markers.id, latitude, longitude FROM markers INNER JOIN users ON users.id = markers.user_id"
+      );
+      socket.emit(SOCKET_EVENTS.MARKERS_FETCHED, result);
+    } catch (err) {
+      let error = err as Object;
+      socket.emit(SOCKET_EVENTS.ERROR, { error: error.toString() });
+    }
+  });
+
+  //TODO: update markers
+
+  socket.on(SOCKET_EVENTS.CREATE_MAP_POST, async (data) => {
+    let { marker_id, subject, content, buffer } = data;
+    let mapPost: utils.MapPost[] = [];
+    let result;
+    let base64Image = "";
+  
+    if (!marker_id || !subject || !content) {
+      socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: 'Missing required data' });
+      return;
+    }
+  
+    try {
+      // Convert the image buffer to a base64 string if it's provided
+      if (buffer) {
+        base64Image = Buffer.from(
+          new Uint8Array(buffer).reduce(function (data, byte) {
+            return data + String.fromCharCode(byte);
+          }, ""),
+          "binary"
+        ).toString("base64");
+      }
+  
+      result = await db.all(
+        "INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image) VALUES(?, ?, ?, ?, DATETIME('now'), ?) RETURNING id",
+        [userId, marker_id, subject, content, base64Image]
+      );
+  
+      if (!result || result.length === 0) {
+        socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: 'Failed to create post' });
+        return;
+      }
+  
+      mapPost = await db.all(
+        "SELECT posts.id, username, subject, content, image, timestamp FROM posts INNER JOIN users ON users.id = posts.user_id"
+      );
+      io.emit(SOCKET_EVENTS.MAP_UPDATE, mapPost);
+  
+    } catch (err) {
+      let error = err as Object;
+      socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
+    }
+  });
+
+  //TODO: fetch map posts
+
+
+  //TODO: update map posts
 
   socket.on(SOCKET_EVENTS.CREATE_COMMENT, async (data) => {
     try {
@@ -285,6 +388,8 @@ io.on("connection", (socket) => {
       socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
     }
   });
+
+
 
   /* Cute Cat Post Socket Events */
   socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {

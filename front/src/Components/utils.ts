@@ -68,5 +68,22 @@ interface CuteCatPost {
     timestamp: string;
 }
 
+interface Marker {
+    id: number;
+    latitude: number;
+    longitude: number;
+}
+
+interface MapPost {
+    id: number;
+    username: string;
+    marker_id: number;
+    subject: string;
+    content: string;
+    timestamp: string;
+    likes: number;
+    image: string;
+}
+
 export { getServerErrorMessages, getAxiosErrorMessages };
-export type { CuteCatPost };
+export type { CuteCatPost, Marker, MapPost };

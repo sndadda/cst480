@@ -72,6 +72,7 @@ interface Marker {
     id: number;
     latitude: number;
     longitude: number;
+    mapboxMarker?: mapboxgl.Marker;
 }
 
 interface MapPost {

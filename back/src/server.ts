@@ -323,31 +323,35 @@ io.on("connection", (socket) => {
   //TODO: update markers
 
   socket.on(SOCKET_EVENTS.CREATE_MAP_POST, async (data) => {
-    let { marker_id, subject, content, buffer } = data;
+    let { marker_id, subject, content, image } = data;
     let mapPost: utils.MapPost[] = [];
     let result;
     let base64Image = "";
+    console.log(data);
   
-    if (!marker_id || !subject || !content) {
+    if (!marker_id || !content) {
       socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: 'Missing required data' });
       return;
     }
   
     try {
       // Convert the image buffer to a base64 string if it's provided
-      if (buffer) {
+      if (image) {
         base64Image = Buffer.from(
-          new Uint8Array(buffer).reduce(function (data, byte) {
+          new Uint8Array(image).reduce(function (data, byte) {
             return data + String.fromCharCode(byte);
           }, ""),
           "binary"
         ).toString("base64");
       }
+      console.log(userId, marker_id, subject, content, base64Image);
   
+      console.log(marker_id);
       result = await db.all(
         "INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image) VALUES(?, ?, ?, ?, DATETIME('now'), ?) RETURNING id",
         [userId, marker_id, subject, content, base64Image]
       );
+      console.log('post saved');
   
       if (!result || result.length === 0) {
         socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: 'Failed to create post' });
@@ -359,6 +363,9 @@ io.on("connection", (socket) => {
       );
       io.emit(SOCKET_EVENTS.MAP_UPDATE, mapPost);
   
+      // Fetch and log the newly created post
+    const newPost = await db.all("SELECT * FROM posts WHERE id = ?", [result[0].id]);
+    console.log(newPost);
     } catch (err) {
       let error = err as Object;
       socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
@@ -366,6 +373,26 @@ io.on("connection", (socket) => {
   });
 
   //TODO: fetch map posts
+  socket.on(SOCKET_EVENTS.FETCH_MAP_POSTS, async (data) => {
+    let { marker_id } = data;
+    let posts;
+    console.log(data);
+    console.log('fetching map posts');
+
+    try {
+      posts = await db.all(
+        "SELECT * FROM posts WHERE marker_id = ?",
+        [marker_id]
+      );
+      console.log(posts);
+
+      socket.emit(SOCKET_EVENTS.MAP_POSTS_FETCHED, posts);
+    } catch (err) {
+      let error = err as Object;
+      console.log(`Error fetching posts: ${error.toString()}`); 
+      socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
+    }
+  });
 
 
   //TODO: update map posts

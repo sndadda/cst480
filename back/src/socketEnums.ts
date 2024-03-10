@@ -20,6 +20,7 @@ const SOCKET_EVENTS = {
   MARKER_ERROR: "marker_error",
   CREATE_MAP_POST: "create_map_post",
   FETCH_MAP_POSTS: "fetch_map_posts",
+  MAP_POSTS_FETCHED: "map_posts_fetched",
   MAP_UPDATE: "map_update",
   MAP_ERROR: "map_error",
 

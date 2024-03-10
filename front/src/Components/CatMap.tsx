@@ -11,6 +11,9 @@ import Fade from '@mui/material/Fade';
 import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import InputLabel from '@mui/material/InputLabel';
+import FormControl from '@mui/material/FormControl';
 import axios from 'axios';
 import { Marker, MapPost, getAxiosErrorMessages } from './utils.ts';
 
@@ -68,11 +71,12 @@ function CatMap() {
             geolocate.current!.trigger();
             return;
           }
-
+          
            // Create a new marker at the clicked location
           const marker = new mapboxgl.Marker()
             .setLngLat(event.lngLat)
-            .addTo(map.current!);
+            
+          setLastMarker(marker);
 
           // Open the modal and save the clicked location
           setIsModalOpen(true);
@@ -101,7 +105,24 @@ function CatMap() {
             const mapboxMarker = new mapboxgl.Marker()
               .setLngLat([marker.longitude, marker.latitude])
               .addTo(map.current!);
+        
+            // Associate a click event with the marker
+            mapboxMarker.getElement().addEventListener('click', (event) => {
+              event.stopPropagation();
+              // Fetch the posts associated with the marker
+              socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
+              // Open the posts modal
+              setIsPostsModalOpen(true);
+            });
           });
+        });
+
+        socket.on(SOCKET_EVENTS.MAP_POSTS_FETCHED, (posts) => {
+          // Update the selectedPosts state with the fetched posts
+          console.log(posts);
+          setSelectedPosts(posts);
+          // Open the posts modal
+          setIsPostsModalOpen(true);
         });
 
        
@@ -204,6 +225,29 @@ function CatMap() {
                             <Avatar sx={{ mr: 2 }}></Avatar>
                             <Typography variant="h6">Username</Typography>
                         </Box>
+                        
+                        <FormControl variant='outlined' fullWidth sx={{ mb: 2 }}>
+                            <InputLabel htmlFor="subject" sx={{ position: 'relative' }}>Subject</InputLabel>
+                            <OutlinedInput
+                                id="subject"
+                                value={formData.subject}
+                                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                placeholder="Subject"
+                                sx={{
+                                  height: 30, // Adjust the height as needed
+                                  borderRadius: 20, // Adjust the border radius as needed
+                                  '.MuiOutlinedInput-notchedOutline': {
+                                    borderColor: 'grey',
+                                  },
+                                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: 'black',
+                                  },
+                                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: 'blue',
+                                  },
+                                }}
+                            />
+                        </FormControl>
                         <TextField
                             autoFocus
                             id="filled-multiline-static"

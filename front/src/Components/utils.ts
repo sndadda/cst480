@@ -86,5 +86,11 @@ interface MapPost {
     image: string;
 }
 
+
+interface CuteCatLike {
+    post_id: number;
+}
+
 export { getServerErrorMessages, getAxiosErrorMessages };
 export type { CuteCatPost, Marker, MapPost };
+

@@ -30,6 +30,9 @@ let mapPostSchema = z.object({
     likes: z.number(),
     image: z.any(),
 });
+let cuteCatLikeSchema = z.object({
+    post_id: z.number().gte(1),
+});
 let dummyUsers = [
     {
         username: "francisco",
@@ -44,4 +47,4 @@ let dummyUsers = [
         password: "Kevin123#",
     },
 ];
-export { userBodySchema, dummyUsers, cuteCatPostSchema, mapPostSchema, markerSchema };
+export { userBodySchema, dummyUsers, cuteCatPostSchema, cuteCatLikeSchema, mapPostSchema, markerSchema };

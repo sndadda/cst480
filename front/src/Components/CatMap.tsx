@@ -172,9 +172,16 @@ function CatMap() {
                 >X</Button>
                 {selectedPosts.map((post, index) => (
                   <div key={index}>
-                    <h2>{post.subject}</h2>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6">Post Details</Typography>
+                    </Box>
+                    <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} />
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Avatar sx={{ mr: 2 }}></Avatar>
+                      <Typography variant="h6">Username</Typography>
+                    </Box>
+                   <h2>{post.subject}</h2>
                     <p>{post.content}</p>
-            
                   </div>
                 ))}
               </Box>

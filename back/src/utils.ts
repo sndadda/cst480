@@ -38,6 +38,10 @@ let mapPostSchema = z.object({
   image: z.any(),
 });
 type MapPost = z.infer<typeof mapPostSchema>;
+let cuteCatLikeSchema = z.object({
+  post_id: z.number().gte(1),
+});
+type CuteCatLike = z.infer<typeof cuteCatLikeSchema>;
 
 let dummyUsers: User[] = [
   {
@@ -55,4 +59,16 @@ let dummyUsers: User[] = [
   },
 ];
 
-export { userBodySchema, User, dummyUsers, cuteCatPostSchema, CuteCatPost, mapPostSchema, MapPost, markerSchema, Marker };
+export {
+  userBodySchema,
+  User,
+  dummyUsers,
+  cuteCatPostSchema,
+  CuteCatPost,
+  cuteCatLikeSchema,
+  CuteCatLike,
+  mapPostSchema, 
+  MapPost, 
+  markerSchema,
+   Marker
+};

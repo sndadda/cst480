@@ -57,6 +57,7 @@ let authorize = async (req, res, next) => {
     if (result.length === 0) {
         return res.status(403).json({ message: "Unauthorized" });
     }
+    res.locals.id = result[0].user_id; // user id will be accessible in any request handler that uses authorize
     next();
 };
 app.get("/api/loggedin", async (req, res) => {
@@ -128,6 +129,7 @@ app.post("/api/login", async (req, res) => {
     if (result.length === 0) {
         return res.status(404).json({ error: "Username does not exist." });
     }
+    let id = result[0].id;
     let hash = result[0].password;
     let verifyResult;
     try {
@@ -142,10 +144,7 @@ app.post("/api/login", async (req, res) => {
     }
     let token = makeToken();
     try {
-        await db.all("INSERT INTO tokens(token, username) VALUES(?, ?)", [
-            token,
-            username,
-        ]);
+        await db.all("INSERT INTO tokens(token, user_id, username) VALUES(?, ?, ?)", [token, id, username]);
     }
     catch (err) {
         let error = err;
@@ -188,6 +187,10 @@ app.get("/api/cuteCatPosts", authorize, async (req, res) => {
         return res.status(500).json({ error: error.toString() });
     }
     return res.status(200).json({ cuteCatPosts: result });
+});
+app.get("/api/cuteCatLikes/:id", authorize, async (req, res) => {
+    let result;
+    let id = req.params.id;
 });
 //////START OF SOCKETS//////////
 io.use(async (socket, next) => {

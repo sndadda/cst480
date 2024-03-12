@@ -15,6 +15,10 @@ let cuteCatPostSchema = z.object({
     caption: z.string(),
     timestamp: z.string(),
 });
+let cuteCatLikeSchema = z.object({
+    postId: z.number().gte(1),
+    userId: z.number().gte(1),
+});
 let dummyUsers = [
     {
         username: "francisco",
@@ -29,4 +33,4 @@ let dummyUsers = [
         password: "Kevin123#",
     },
 ];
-export { userBodySchema, dummyUsers, cuteCatPostSchema };
+export { userBodySchema, dummyUsers, cuteCatPostSchema, cuteCatLikeSchema, };

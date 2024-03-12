@@ -6,7 +6,9 @@ CREATE TABLE users (
 
 CREATE TABLE tokens (
     token TEXT,
-    username TEXT
+    user_id INTEGER,
+    username TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE posts (
@@ -50,5 +52,13 @@ CREATE TABLE cute_cat_posts (
     likes INT DEFAULT 0,
     caption TEXT,
     timestamp TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE cute_cat_likes (
+    id INTEGER PRIMARY KEY,
+    post_id INTEGER,
+    user_id INTEGER,
+    FOREIGN KEY (post_id) REFERENCES posts(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );

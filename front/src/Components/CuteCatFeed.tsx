@@ -43,6 +43,10 @@ function CuteCatFeed() {
                 setMessages([data.error]);
             }
         });
+        return () => {
+            socket.off(SOCKET_EVENTS.CUTE_CAT_UPDATE);
+            socket.off(SOCKET_EVENTS.CUTE_CAT_ERROR);
+        };
     }, [socket]);
 
     let handlePost = () => {
@@ -79,7 +83,7 @@ function CuteCatFeed() {
                             <div className="interactions">
                                 <FaHeart
                                     className="like-button"
-                                    onClick={(e) => {
+                                    onClick={() => {
                                         handleLike(id);
                                         // TODO set button to disabled
                                     }}

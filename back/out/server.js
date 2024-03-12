@@ -319,7 +319,7 @@ io.on("connection", (socket) => {
             await db.all("INSERT INTO cute_cat_likes(post_id, user_id) VALUES(?, ?)", [postId, userId]);
             cuteCatLikes = await db.all("SELECT post_id FROM cute_cat_likes WHERE user_id=?", [userId]);
             cuteCatFeed = await db.all("SELECT cute_cat_posts.id, username, image, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id");
-            io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE_LIKES, cuteCatLikes);
+            io.to(socket.id).emit(SOCKET_EVENTS.CUTE_CAT_UPDATE_LIKES, cuteCatLikes);
             io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);
         }
         catch (err) {

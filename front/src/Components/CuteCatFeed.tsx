@@ -16,7 +16,6 @@ function CuteCatFeed() {
     let [posts, setPosts] = useState<CuteCatPost[]>([]);
     let [likedPosts, setLikedPosts] = useState<CuteCatLike[]>([]);
 
-    // TODO figure out why page only works if manually refreshed at first
     useEffect(() => {
         (async () => {
             try {
@@ -40,6 +39,7 @@ function CuteCatFeed() {
     }, []);
 
     useEffect(() => {
+        socket.connect();
         socket.on(SOCKET_EVENTS.CUTE_CAT_UPDATE, (data) => {
             setPosts(data);
         });
@@ -57,6 +57,7 @@ function CuteCatFeed() {
             socket.off(SOCKET_EVENTS.CUTE_CAT_UPDATE);
             socket.off(SOCKET_EVENTS.CUTE_CAT_UPDATE_LIKES);
             socket.off(SOCKET_EVENTS.CUTE_CAT_ERROR);
+            socket.disconnect();
         };
     }, [socket]);
 

@@ -68,5 +68,9 @@ interface CuteCatPost {
     timestamp: string;
 }
 
+interface CuteCatLike {
+    post_id: number;
+}
+
 export { getServerErrorMessages, getAxiosErrorMessages };
-export type { CuteCatPost };
+export type { CuteCatPost, CuteCatLike };

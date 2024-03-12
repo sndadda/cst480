@@ -64,6 +64,7 @@ let authorize: RequestHandler = async (req, res, next) => {
   if (result.length === 0) {
     return res.status(403).json({ message: "Unauthorized" });
   }
+  res.locals.id = result[0].user_id; // user id will be accessible in any request handler that uses authorize
   next();
 };
 
@@ -136,6 +137,7 @@ app.post("/api/login", async (req, res) => {
   if (result.length === 0) {
     return res.status(404).json({ error: "Username does not exist." });
   }
+  let id = result[0].id;
   let hash = result[0].password;
   let verifyResult: boolean;
   try {
@@ -149,10 +151,10 @@ app.post("/api/login", async (req, res) => {
   }
   let token = makeToken();
   try {
-    await db.all("INSERT INTO tokens(token, username) VALUES(?, ?)", [
-      token,
-      username,
-    ]);
+    await db.all(
+      "INSERT INTO tokens(token, user_id, username) VALUES(?, ?, ?)",
+      [token, id, username]
+    );
   } catch (err) {
     let error = err as Object;
     return res.status(500).json({ error: error.toString() });
@@ -195,6 +197,21 @@ app.get("/api/cuteCatPosts", authorize, async (req, res) => {
     return res.status(500).json({ error: error.toString() });
   }
   return res.status(200).json({ cuteCatPosts: result });
+});
+
+app.get("/api/cuteCatLikes", authorize, async (req, res) => {
+  let result: utils.CuteCatLike[];
+  let id = res.locals.id;
+  try {
+    result = await db.all(
+      "SELECT post_id FROM cute_cat_likes WHERE user_id=?",
+      [id]
+    );
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
+  return res.status(200).json({ cuteCatLikes: result });
 });
 
 //////START OF SOCKETS//////////
@@ -320,6 +337,7 @@ io.on("connection", (socket) => {
   socket.on(SOCKET_EVENTS.CUTE_CAT_LIKE, async (data) => {
     let { postId, increment } = data;
     let cuteCatFeed: utils.CuteCatPost[] = [];
+    let cuteCatLikes: utils.CuteCatLike[] = [];
     let result;
     let likes: number;
     try {
@@ -332,9 +350,18 @@ io.on("connection", (socket) => {
         likes,
         postId,
       ]);
+      await db.all(
+        "INSERT INTO cute_cat_likes(post_id, user_id) VALUES(?, ?)",
+        [postId, userId]
+      );
+      cuteCatLikes = await db.all(
+        "SELECT post_id FROM cute_cat_likes WHERE user_id=?",
+        [userId]
+      );
       cuteCatFeed = await db.all(
         "SELECT cute_cat_posts.id, username, image, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
       );
+      io.to(socket.id).emit(SOCKET_EVENTS.CUTE_CAT_UPDATE_LIKES, cuteCatLikes);
       io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);
     } catch (err) {
       let error = err as Object;

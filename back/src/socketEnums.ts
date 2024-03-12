@@ -11,6 +11,7 @@ const SOCKET_EVENTS = {
   CUTE_CAT_POST: "cute_cat_post",
   CUTE_CAT_LIKE: "cute_cat_like",
   CUTE_CAT_UPDATE: "cute_cat_update",
+  CUTE_CAT_UPDATE_LIKES: "cute_cat_update_likes",
   CUTE_CAT_ERROR: "cute_cat_error",
 };
 

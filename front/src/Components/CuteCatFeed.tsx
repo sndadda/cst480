@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { socket } from "../socket.tsx";
 import SOCKET_EVENTS from "../socketEnums.js";
-import { CuteCatPost, getAxiosErrorMessages } from "./utils.ts";
+import { CuteCatLike, CuteCatPost, getAxiosErrorMessages } from "./utils.ts";
 import axios from "axios";
 import { FaUserCircle } from "react-icons/fa";
 import { FaHeart } from "react-icons/fa6";
@@ -14,6 +14,7 @@ function CuteCatFeed() {
         caption: "",
     });
     let [posts, setPosts] = useState<CuteCatPost[]>([]);
+    let [likedPosts, setLikedPosts] = useState<CuteCatLike[]>([]);
 
     // TODO figure out why page only works if manually refreshed at first
     useEffect(() => {
@@ -25,6 +26,12 @@ function CuteCatFeed() {
                     "/api/cuteCatPosts"
                 );
                 setPosts(cuteCatPosts);
+                let {
+                    data: { cuteCatLikes },
+                } = await axios.get<{ cuteCatLikes: CuteCatLike[] }>(
+                    "/api/cuteCatLikes"
+                );
+                setLikedPosts(cuteCatLikes);
                 setMessages([]);
             } catch (error) {
                 setMessages(getAxiosErrorMessages(error));
@@ -36,6 +43,9 @@ function CuteCatFeed() {
         socket.on(SOCKET_EVENTS.CUTE_CAT_UPDATE, (data) => {
             setPosts(data);
         });
+        socket.on(SOCKET_EVENTS.CUTE_CAT_UPDATE_LIKES, (data) => {
+            setLikedPosts(data);
+        });
         socket.on(SOCKET_EVENTS.CUTE_CAT_ERROR, (data) => {
             if (!data) {
                 setMessages([]);
@@ -45,6 +55,7 @@ function CuteCatFeed() {
         });
         return () => {
             socket.off(SOCKET_EVENTS.CUTE_CAT_UPDATE);
+            socket.off(SOCKET_EVENTS.CUTE_CAT_UPDATE_LIKES);
             socket.off(SOCKET_EVENTS.CUTE_CAT_ERROR);
         };
     }, [socket]);
@@ -66,6 +77,17 @@ function CuteCatFeed() {
         });
     }
 
+    // https://stackoverflow.com/questions/4587061/how-to-determine-if-object-is-in-array
+    function containsObject(obj: CuteCatLike, list: CuteCatLike[]) {
+        let i: number;
+        for (i = 0; i < list.length; i++) {
+            if (list[i].post_id === obj.post_id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     let feed = (
         <div className="cute-cat-feed">
             <h1>Cute Cat Feed:</h1>
@@ -81,13 +103,16 @@ function CuteCatFeed() {
                                 <img src={`data:image/jpeg;base64,${image}`} />
                             </div>
                             <div className="interactions">
-                                <FaHeart
-                                    className="like-button"
-                                    onClick={() => {
-                                        handleLike(id);
-                                        // TODO set button to disabled
-                                    }}
-                                />
+                                {containsObject({ post_id: id }, likedPosts) ? (
+                                    <FaHeart className="liked" />
+                                ) : (
+                                    <FaHeart
+                                        className="like-button"
+                                        onClick={() => {
+                                            handleLike(id);
+                                        }}
+                                    />
+                                )}
                             </div>
                             <div className="likes">{likes} likes</div>
                             <div className="caption-box">

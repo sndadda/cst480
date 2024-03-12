@@ -199,9 +199,19 @@ app.get("/api/cuteCatPosts", authorize, async (req, res) => {
   return res.status(200).json({ cuteCatPosts: result });
 });
 
-app.get("/api/cuteCatLikes/:id", authorize, async (req, res) => {
+app.get("/api/cuteCatLikes", authorize, async (req, res) => {
   let result: utils.CuteCatLike[];
-  let id = req.params.id;
+  let id = res.locals.id;
+  try {
+    result = await db.all(
+      "SELECT post_id FROM cute_cat_likes WHERE user_id=?",
+      [id]
+    );
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
+  return res.status(200).json({ cuteCatLikes: result });
 });
 
 //////START OF SOCKETS//////////
@@ -327,6 +337,7 @@ io.on("connection", (socket) => {
   socket.on(SOCKET_EVENTS.CUTE_CAT_LIKE, async (data) => {
     let { postId, increment } = data;
     let cuteCatFeed: utils.CuteCatPost[] = [];
+    let cuteCatLikes: utils.CuteCatLike[] = [];
     let result;
     let likes: number;
     try {
@@ -339,9 +350,18 @@ io.on("connection", (socket) => {
         likes,
         postId,
       ]);
+      await db.all(
+        "INSERT INTO cute_cat_likes(post_id, user_id) VALUES(?, ?)",
+        [postId, userId]
+      );
+      cuteCatLikes = await db.all(
+        "SELECT post_id FROM cute_cat_likes WHERE user_id=?",
+        [userId]
+      );
       cuteCatFeed = await db.all(
         "SELECT cute_cat_posts.id, username, image, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
       );
+      io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE_LIKES, cuteCatLikes);
       io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);
     } catch (err) {
       let error = err as Object;

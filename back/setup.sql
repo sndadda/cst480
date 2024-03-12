@@ -58,7 +58,5 @@ CREATE TABLE cute_cat_posts (
 CREATE TABLE cute_cat_likes (
     id INTEGER PRIMARY KEY,
     post_id INTEGER,
-    user_id INTEGER,
-    FOREIGN KEY (post_id) REFERENCES posts(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    user_id INTEGER
 );

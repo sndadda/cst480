@@ -21,8 +21,7 @@ let cuteCatPostSchema = z.object({
 type CuteCatPost = z.infer<typeof cuteCatPostSchema>;
 
 let cuteCatLikeSchema = z.object({
-  postId: z.number().gte(1),
-  userId: z.number().gte(1),
+  post_id: z.number().gte(1),
 });
 type CuteCatLike = z.infer<typeof cuteCatLikeSchema>;
 

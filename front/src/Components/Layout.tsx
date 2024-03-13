@@ -2,10 +2,15 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useContext, useState, useEffect } from "react";
 import { getAxiosErrorMessages, getServerErrorMessages } from "./utils";
+import Avatar from '@mui/material/Avatar';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import "./Layout.css";
 import Login from "./Login";
 
 function Header({ setRefresh, name, setName }: any) {
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const navigate = useNavigate();
 
     // TODO find better type def for setRefresh???
     let handleLogout = async function () {
@@ -27,12 +32,19 @@ function Header({ setRefresh, name, setName }: any) {
                 <Link to="/feed">Feed</Link>
                 <Link to="/cuteCatFeed">Cute Cats</Link>
             </div>
-            <div className="profile-section">
-            {name && <span style={{ color: 'black' }}>Welcome, {name}</span>}
-                <Link to="/profile">Profile</Link>
-                <Link to="/" onClick={handleLogout}>
-                    Logout
-                </Link>
+            <div className="profile-section" style={{ display: 'flex', alignItems: 'center' }}>
+                {name && <span style={{ color: 'black', marginRight: '10px' }}>Welcome, {name}</span>}
+                <Avatar
+                    onClick={(event) => setAnchorEl(event.currentTarget)}
+                />
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={() => setAnchorEl(null)}
+                >
+                <MenuItem onClick={() => navigate('/profile')}>Settings</MenuItem>
+                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                </Menu>
             </div>
         </>
     );

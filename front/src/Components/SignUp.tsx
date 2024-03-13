@@ -3,11 +3,13 @@ import axios from "axios";
 import { getServerErrorMessages } from "./utils";
 import "./SignUp.css";
 import { FaUser, FaEye, FaEyeSlash, FaRegSmileBeam } from "react-icons/fa";
+import Avatar from '@mui/material/Avatar';
 
 function SignUp({ setRegistered, setLoginMessages }: any) {
     let [signUpForm, setSignUpForm] = useState({
         username: "",
         password: "",
+        name: "",
     });
     let [passwordVisibility, setPasswordVisibility] =
         useState<string>("password");
@@ -80,6 +82,20 @@ function SignUp({ setRegistered, setLoginMessages }: any) {
             <div id="sign-up-form">
                 <h1>Sign Up</h1>
                 <div className="input-box">
+                <input 
+                        id="name"
+                        value={signUpForm.name}
+                        onChange={(e) => {
+                            setSignUpForm({
+                                ...signUpForm,
+                                [e.target.id]: e.target.value,
+                            });
+                        }}
+                        placeholder="Name"
+                    ></input>
+                </div>
+                <div className="input-box">
+                        
                     <input
                         id="username"
                         value={signUpForm.username}
@@ -122,6 +138,7 @@ function SignUp({ setRegistered, setLoginMessages }: any) {
                         />
                     )}
                 </div>
+            
                 <button className="sign-up-button" onClick={handleSubmit}>
                     Register
                 </button>

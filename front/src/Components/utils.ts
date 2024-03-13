@@ -68,9 +68,30 @@ interface CuteCatPost {
     timestamp: string;
 }
 
+interface Marker {
+    id: number;
+    latitude: number;
+    longitude: number;
+    mapboxMarker?: mapboxgl.Marker;
+}
+
+interface MapPost {
+    id: number;
+    name: string;
+    username: string;
+    marker_id: number;
+    subject: string;
+    content: string;
+    timestamp: string;
+    likes: number;
+    image: string;
+}
+
+
 interface CuteCatLike {
     post_id: number;
 }
 
 export { getServerErrorMessages, getAxiosErrorMessages };
-export type { CuteCatPost, CuteCatLike };
+export type { CuteCatLike, CuteCatPost, Marker, MapPost };
+

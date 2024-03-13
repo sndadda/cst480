@@ -14,8 +14,8 @@ import Divider from '@mui/material/Divider';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
-import axios from 'axios';
 import { Marker, MapPost, getAxiosErrorMessages } from './utils.ts';
+import axios from 'axios';
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoic25kYWRkYTYzIiwiYSI6ImNsc3RtdnZrODBxaDkya21xdDUyMzVseWYifQ.1LO5AE0xSXX9ndA9l1lcZw'
 function CatMap() {
@@ -24,7 +24,7 @@ function CatMap() {
         parent_comment_id: '',
         content: ''
     });
-    
+    const [username, setUsername] = useState('');
     const mapContainer = useRef<HTMLDivElement | null>(null);
     const [markers, setMarkers] = useState<Marker[]>([]);
     // Add a new state for the last created marker
@@ -39,8 +39,10 @@ function CatMap() {
     const [selectedPosts, setSelectedPosts] = useState<MapPost[]>([]);
     const [lastMarkerId, setLastMarkerId] = useState(0);
     let [posts, setPosts] = useState<MapPost[]>([]);
+    const [name, setName] = useState('');
 
     useEffect(() => {
+        socket.connect();
         if (map.current) return; // initialize map only once
         map.current = new mapboxgl.Map({
           container: mapContainer.current!,
@@ -121,10 +123,20 @@ function CatMap() {
           // Update the selectedPosts state with the fetched posts
           console.log(posts);
           setSelectedPosts(posts);
+          console.log(selectedPosts);
           // Open the posts modal
           setIsPostsModalOpen(true);
         });
 
+        axios.get('/api/loggedin')
+          .then(response => {
+            if (response.data.loggedIn) {
+              setName(response.data.name);
+            }
+          })
+          .catch(error => {
+            console.log(error);
+          });
        
          
     }, []);
@@ -132,20 +144,23 @@ function CatMap() {
  
 
     const handlePostClick = () => {
-      //console.log(markerPos);
-      
+      // Emit the SOCKET_EVENTS.MARKER event with the marker position
       socket.emit(SOCKET_EVENTS.MARKER, markerPos);
-
-      socket.on(SOCKET_EVENTS.MARKER_CREATED, (marker) => {
-        // Update the marker_id of the post and emit the SOCKET_EVENTS.CREATE_MAP_POST event
+    
+      // Listen for the SOCKET_EVENTS.MARKER_CREATED event
+      socket.once(SOCKET_EVENTS.MARKER_CREATED, (marker) => {
+        // Update the marker_id of the post
         const postData = { ...formData, marker_id: marker.id };
-
-      // Emit the SOCKET_EVENTS.CREATE_MAP_POST event with the post data
+    
+        // Emit the SOCKET_EVENTS.CREATE_MAP_POST event with the post data
         socket.emit(SOCKET_EVENTS.CREATE_MAP_POST, postData);
+    
+        // Reset the form data
         setFormData({ subject: '', content: '', image: null });
       });
+    
+      // Close the modal
       setIsModalOpen(false);
-
     };
 
     return (
@@ -178,10 +193,11 @@ function CatMap() {
                     <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} />
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       <Avatar sx={{ mr: 2 }}></Avatar>
-                      <Typography variant="h6">Username</Typography>
+                      <Typography variant="h6">{post.name}</Typography>
                     </Box>
                    <h2>{post.subject}</h2>
                     <p>{post.content}</p>
+
                   </div>
                 ))}
               </Box>
@@ -230,7 +246,7 @@ function CatMap() {
                         <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} />
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                             <Avatar sx={{ mr: 2 }}></Avatar>
-                            <Typography variant="h6">Username</Typography>
+                            <Typography variant="h6">{name}</Typography>
                         </Box>
                         
                         <FormControl variant='outlined' fullWidth sx={{ mb: 2 }}>

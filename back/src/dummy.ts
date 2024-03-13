@@ -14,7 +14,7 @@ await db.get("PRAGMA foreign_keys = ON");
 
 // insert dummy users
 await db.run("DELETE FROM users");
-for (let { username, password } of dummyUsers) {
+for (let { name, username, password, image } of dummyUsers) {
   let hash;
   try {
     hash = await argon2.hash(password);
@@ -24,9 +24,12 @@ for (let { username, password } of dummyUsers) {
     continue;
   }
   try {
-    await db.run("INSERT INTO users(username, password) VALUES(?, ?)", [
+    console.log(name, image);
+    await db.run("INSERT INTO users(name, username, password, image) VALUES(?, ?, ?, ?)", [
+      name,
       username,
       hash,
+      image
     ]);
   } catch (err) {
     let error = err as Object;
@@ -34,6 +37,7 @@ for (let { username, password } of dummyUsers) {
       `Error when inserting '${username}, ${hash}':`,
       error.toString()
     );
+  
   }
 }
 

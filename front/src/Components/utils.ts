@@ -77,6 +77,7 @@ interface Marker {
 
 interface MapPost {
     id: number;
+    name: string;
     username: string;
     marker_id: number;
     subject: string;
@@ -92,5 +93,5 @@ interface CuteCatLike {
 }
 
 export { getServerErrorMessages, getAxiosErrorMessages };
-export type { CuteCatPost, Marker, MapPost };
+export type { CuteCatLike, CuteCatPost, Marker, MapPost };
 

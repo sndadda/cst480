@@ -5,12 +5,14 @@ import { getAxiosErrorMessages, getServerErrorMessages } from "./utils";
 import "./Layout.css";
 import Login from "./Login";
 
-function Header({ setRefresh }: any) {
+function Header({ setRefresh, name, setName }: any) {
+
     // TODO find better type def for setRefresh???
     let handleLogout = async function () {
         try {
             await axios.post("/api/logout");
             setRefresh("logout");
+            setName(null);
         } catch (error) {
             console.log(getServerErrorMessages(error)); // TODO maybe remove???
         }
@@ -26,6 +28,7 @@ function Header({ setRefresh }: any) {
                 <Link to="/cuteCatFeed">Cute Cats</Link>
             </div>
             <div className="profile-section">
+            {name && <span style={{ color: 'black' }}>Welcome, {name}</span>}
                 <Link to="/profile">Profile</Link>
                 <Link to="/" onClick={handleLogout}>
                     Logout
@@ -36,6 +39,7 @@ function Header({ setRefresh }: any) {
 }
 
 function Layout() {
+    let [name, setName] = useState<string | null>(null);
     let [loggedInStatus, setLoggedInStatus] = useState<boolean>(false);
     let [refresh, setRefresh] = useState(""); // this is used to manually trigger useEffect when user logs in or out
 
@@ -43,9 +47,10 @@ function Layout() {
         (async () => {
             try {
                 let {
-                    data: { loggedIn },
-                } = await axios.get<{ loggedIn: boolean }>("/api/loggedin");
+                    data: { loggedIn, name },
+                } = await axios.get<{ loggedIn: boolean, name: string }>("/api/loggedin");
                 setLoggedInStatus(loggedIn);
+                setName(name);
             } catch (error) {
                 console.log(getAxiosErrorMessages(error));
             }
@@ -55,7 +60,7 @@ function Layout() {
     let layoutPage = (
         <>
             <nav>
-                <Header setRefresh={setRefresh} />
+                <Header setRefresh={setRefresh} name={name} setName={setName} />
             </nav>
             <main>
                 <Outlet />

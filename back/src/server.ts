@@ -414,12 +414,12 @@ io.on("connection", (socket) => {
           "binary"
         ).toString("base64");
         result = await db.all(
-          "INSERT INTO cute_cat_posts(user_id, image, caption, timestamp) VALUES(?, ?, ?, datetime('now')) RETURNING id",
+          "INSERT INTO cute_cat_posts(user_id, cute_cat_posts.image, caption, timestamp) VALUES(?, ?, ?, datetime('now')) RETURNING id",
           [userId, base64image, caption]
         );
         imageRef = result[0].id;
         cuteCatFeed = await db.all(
-          "SELECT cute_cat_posts.id, username, image, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
+          "SELECT cute_cat_posts.id, username, cute_cat_posts.image, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
         );
         io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);
       } catch (err) {
@@ -459,7 +459,7 @@ io.on("connection", (socket) => {
         [userId]
       );
       cuteCatFeed = await db.all(
-        "SELECT cute_cat_posts.id, username, image, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
+        "SELECT cute_cat_posts.id, username, cute_cat_posts.image, likes, caption, timestamp FROM cute_cat_posts INNER JOIN users ON users.id = cute_cat_posts.user_id"
       );
       io.to(socket.id).emit(SOCKET_EVENTS.CUTE_CAT_UPDATE_LIKES, cuteCatLikes);
       io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE, cuteCatFeed);

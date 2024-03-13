@@ -414,7 +414,7 @@ io.on("connection", (socket) => {
           "binary"
         ).toString("base64");
         result = await db.all(
-          "INSERT INTO cute_cat_posts(user_id, cute_cat_posts.image, caption, timestamp) VALUES(?, ?, ?, datetime('now')) RETURNING id",
+          "INSERT INTO cute_cat_posts(user_id, image, caption, timestamp) VALUES(?, ?, ?, datetime('now')) RETURNING id",
           [userId, base64image, caption]
         );
         imageRef = result[0].id;

@@ -17,6 +17,19 @@ import FormControl from '@mui/material/FormControl';
 import { Marker, MapPost, getAxiosErrorMessages } from './utils.ts';
 import axios from 'axios';
 
+// Helper function to format the timestamp
+function formatTimestamp(timestamp: string) {
+  const postDate = new Date(timestamp);
+  const currentDate = new Date();
+  const diffInHours = Math.abs(currentDate.getTime() - postDate.getTime()) / 3600000;
+
+  if (diffInHours < 24) {
+    return `${Math.round(diffInHours)}h`;
+  } else {
+    return `${Math.round(diffInHours / 24)}d`;
+  }
+}
+
 mapboxgl.accessToken = 'pk.eyJ1Ijoic25kYWRkYTYzIiwiYSI6ImNsc3RtdnZrODBxaDkya21xdDUyMzVseWYifQ.1LO5AE0xSXX9ndA9l1lcZw'
 function CatMap() {
  
@@ -43,6 +56,7 @@ function CatMap() {
 
     useEffect(() => {
         socket.connect();
+       
         if (map.current) return; // initialize map only once
         map.current = new mapboxgl.Map({
           container: mapContainer.current!,
@@ -188,14 +202,17 @@ function CatMap() {
                 {selectedPosts.map((post, index) => (
                   <div key={index}>
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6">Post Details</Typography>
+                      <Typography variant="h6">{post.subject}</Typography>
                     </Box>
                     <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} />
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       <Avatar sx={{ mr: 2 }}></Avatar>
-                      <Typography variant="h6">{post.name}</Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <Typography variant="h6">{post.name}</Typography>
+                        <Typography variant="body2">{formatTimestamp(post.timestamp)}</Typography>
+                      </Box>
                     </Box>
-                   <h2>{post.subject}</h2>
+                
                     <p>{post.content}</p>
 
                   </div>

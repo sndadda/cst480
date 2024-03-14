@@ -57,8 +57,15 @@ CREATE TABLE posts (
     FOREIGN KEY (marker_id) REFERENCES markers(id)
 );
 
+CREATE TABLE post_likes (
+    id INTEGER PRIMARY KEY,
+    post_id INTEGER,
+    user_id INTEGER
+);
+
 CREATE TABLE cute_cat_likes (
     id INTEGER PRIMARY KEY,
     post_id INTEGER,
     user_id INTEGER
 );
+

@@ -15,7 +15,12 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
 import { Marker, MapPost, getAxiosErrorMessages } from './utils.ts';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import IconButton from '@mui/material/IconButton';
+import CommentIcon from '@mui/icons-material/Comment';
 import axios from 'axios';
+import "./CatMap.css";
 
 // Helper function to format the timestamp
 function formatTimestamp(timestamp: string) {
@@ -53,6 +58,9 @@ function CatMap() {
     const [lastMarkerId, setLastMarkerId] = useState(0);
     let [posts, setPosts] = useState<MapPost[]>([]);
     const [name, setName] = useState('');
+    const [imageURL, setImageURL] = useState<string | null>(null);
+    const [userId, setUserId] = useState(null);
+    const [userLikes, setUserLikes] = useState<number[]>([]);
 
     useEffect(() => {
         socket.connect();
@@ -94,7 +102,6 @@ function CatMap() {
             
           setLastMarker(marker);
 
-          // Open the modal and save the clicked location
           setIsModalOpen(true);
           setMarkerPos({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
         });
@@ -108,7 +115,6 @@ function CatMap() {
           .setLngLat([marker.longitude, marker.latitude])
           .addTo(map.current!);
 
-          // Associate a click event with the marker
           mapboxMarker.getElement().addEventListener('click', () => {
           // Fetch the posts associated with the marker
             socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
@@ -127,25 +133,72 @@ function CatMap() {
               event.stopPropagation();
               // Fetch the posts associated with the marker
               socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
-              // Open the posts modal
               setIsPostsModalOpen(true);
             });
           });
         });
 
         socket.on(SOCKET_EVENTS.MAP_POSTS_FETCHED, (posts) => {
-          // Update the selectedPosts state with the fetched posts
           console.log(posts);
           setSelectedPosts(posts);
           console.log(selectedPosts);
-          // Open the posts modal
+
           setIsPostsModalOpen(true);
+        });
+
+        socket.on('postLiked', (data) => {
+          const { postId, likeCount } = data;
+        
+          // Update the like count in the UI
+          const likeCountElement = document.querySelector(`#post-${postId}-like-count`);
+          if (likeCountElement) {
+            likeCountElement.textContent = likeCount;
+          }
+        
+          // Find the post that was liked and update its likeCount
+          setSelectedPosts((prevPosts) =>
+            prevPosts.map((post) =>
+              post.id === postId ? { ...post, likeCount } : post
+            )
+          );
+        });
+
+        socket.emit('fetchUserLikes', { userId });
+
+  socket.on('userLikesFetched', (data) => {
+    const { userLikes } = data;
+
+    // Set the userLikes state
+    setUserLikes(userLikes);
+  });
+        socket.on('postLiked', (data) => {
+          const { postId, likes } = data;
+        
+          // Update the like count of the post in the selectedPosts state
+          setSelectedPosts((prevPosts) =>
+            prevPosts.map((post) =>
+              post.id === postId ? { ...post, likes } : post
+            )
+          );
+        
+          // Update the like count of the post in the posts state
+          setPosts((prevPosts) =>
+            prevPosts.map((post) =>
+              post.id === postId ? { ...post, likes } : post
+            )
+          );
+        
+          // Update the user's likes
+          setUserLikes((prevLikes) =>
+            prevLikes.includes(postId) ? prevLikes.filter((id) => id !== postId) : [...prevLikes, postId]
+          );
         });
 
         axios.get('/api/loggedin')
           .then(response => {
             if (response.data.loggedIn) {
               setName(response.data.name);
+              setUserId(response.data.userId);
             }
           })
           .catch(error => {
@@ -158,25 +211,41 @@ function CatMap() {
  
 
     const handlePostClick = () => {
-      // Emit the SOCKET_EVENTS.MARKER event with the marker position
-      socket.emit(SOCKET_EVENTS.MARKER, markerPos);
-    
-      // Listen for the SOCKET_EVENTS.MARKER_CREATED event
+      // Convert the image to a base64 string
+      if (formData.image) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          // Emit the SOCKET_EVENTS.MARKER event with the marker position and the base64 image
+          socket.emit(SOCKET_EVENTS.MARKER, { ...markerPos, image: reader.result });
+        };
+        reader.readAsDataURL(formData.image);
+      } else {
+        // Emit the SOCKET_EVENTS.MARKER event with the marker position
+        socket.emit(SOCKET_EVENTS.MARKER, markerPos);
+      }
+
       socket.once(SOCKET_EVENTS.MARKER_CREATED, (marker) => {
-        // Update the marker_id of the post
         const postData = { ...formData, marker_id: marker.id };
-    
+        
         // Emit the SOCKET_EVENTS.CREATE_MAP_POST event with the post data
         socket.emit(SOCKET_EVENTS.CREATE_MAP_POST, postData);
-    
-        // Reset the form data
+        
         setFormData({ subject: '', content: '', image: null });
+        setImageURL(null); 
       });
-    
-      // Close the modal
+        
       setIsModalOpen(false);
     };
 
+   
+    const handleLikePost = (postId: number) => {
+      // Emit the 'likePost' event to the server
+      socket.emit('likePost', { postId, userId });
+    };
+
+    const handleCommentPost = (postId: number) => {
+  
+    };
     return (
         <div ref={mapContainer} style={{ width: '96%', height: '100vh' }}>
           <Modal
@@ -188,7 +257,17 @@ function CatMap() {
             }}
           >
             <Fade in={isPostsModalOpen}>
-              <Box sx={{ position: 'relative', width: '50%', bgcolor: 'background.paper', p: 2, mx: 'auto', my: '10%', borderRadius: 2 }}>
+            <Box sx={{ 
+              position: 'relative', 
+              width: '65%', 
+              minHeight: '150px', 
+              bgcolor: 'background.paper', 
+              p: 2, 
+              mx: 'auto', 
+              my: '10%', 
+              borderRadius: 2,
+              overflowY: 'auto' //scroll
+            }}>
                 <Button 
                   sx={{ 
                     position: 'absolute', 
@@ -213,9 +292,23 @@ function CatMap() {
                       </Box>
                     </Box>
                 
-                    <p>{post.content}</p>
-
+                    <p style={{ marginBottom: '20px' }}>{post.content}</p>
+                    {post.image && <img className="preview-image" src={post.image} alt="Post" style={{ marginTop: '20px' }} />}
+                    {userLikes.includes(post.id) ? (
+                      <FavoriteIcon id={`post-${post.id}-heart-icon`} onClick={() => handleLikePost(post.id)} style={{ color: 'red' }} />
+                    ) : (
+                      <FavoriteBorderIcon id={`post-${post.id}-heart-icon`} onClick={() => handleLikePost(post.id)} />
+                    )}
+                    <span id={`post-${post.id}-like-count`}>{post.likes}</span>
+                    <IconButton
+                      onMouseEnter={(event) => event.currentTarget.style.color = 'blue'}
+                      onMouseLeave={(event) => event.currentTarget.style.color = ''}
+                      onClick={() => handleCommentPost(post.id)}
+                    >
+                    <CommentIcon />
+                    </IconButton>
                   </div>
+
                 ))}
               </Box>
             </Fade>
@@ -343,8 +436,18 @@ function CatMap() {
                       ...formData,
                       image: e.target.files ? e.target.files[0] : null,
                     });
-                  }}
+
+                    // Read the file and set the result to imageURL
+                    if (e.target.files && e.target.files[0]) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setImageURL(event.target?.result as string);
+                      };
+                      reader.readAsDataURL(e.target.files[0]);
+                    }
+                  }}  
                 />
+                {imageURL && <img className="preview-image" src={imageURL} />}
                 <Button 
                     variant="contained" 
                     onClick={handlePostClick}

@@ -9,6 +9,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "mapbox-gl/dist/mapbox-gl.css"; // contains styles to display map
 import UserFeed from "./Components/UserFeed.tsx";
 import CuteCatFeed from "./Components/CuteCatFeed.tsx";
+import Profile from "./Components/Profile.tsx";
 
 const Main = () => {
     let router = createBrowserRouter([
@@ -26,6 +27,10 @@ const Main = () => {
                 {
                     path: "/cuteCatFeed",
                     element: <CuteCatFeed />,
+                },
+                {
+                    path: "/profile",
+                    element: <Profile />,
                 },
                 {
                     path: "*",

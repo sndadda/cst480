@@ -92,6 +92,10 @@ interface CuteCatLike {
     post_id: number;
 }
 
+interface PostLike {
+    post_id: number;
+}
+
 export { getServerErrorMessages, getAxiosErrorMessages };
 export type { CuteCatLike, CuteCatPost, Marker, MapPost };
 

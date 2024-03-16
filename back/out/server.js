@@ -445,6 +445,21 @@ io.on("connection", (socket) => {
             });
         }
     });
+    socket.on(SOCKET_EVENTS.CUTE_CAT_COMMENT, async (data) => {
+        let { postId, comment } = data;
+        let cuteCatComments = [];
+        try {
+            await db.all("INSERT INTO cute_cat_comments(post_id, user_id, comment) VALUES(?, ?, ?)", [postId, userId, comment]);
+            cuteCatComments = await db.all("SELECT post_id, user_id, comment FROM cute_cat_comments");
+            io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE_COMMENTS, cuteCatComments);
+        }
+        catch (err) {
+            let error = err;
+            io.to(socket.id).emit(SOCKET_EVENTS.CUTE_CAT_ERROR, {
+                error: error.toString(),
+            });
+        }
+    });
     socket.on(SOCKET_EVENTS.CUTE_CAT_LIKE, async (data) => {
         let { postId, increment } = data;
         let cuteCatFeed = [];

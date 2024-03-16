@@ -69,3 +69,10 @@ CREATE TABLE cute_cat_likes (
     user_id INTEGER
 );
 
+CREATE TABLE cute_cat_comments (
+    id INTEGER PRIMARY KEY,
+    post_id INTEGER,
+    user_id INTEGER,
+    comment TEXT
+);
+

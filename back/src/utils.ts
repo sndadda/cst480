@@ -1,29 +1,25 @@
 import { z } from "zod";
 
 let loginUserBodySchema = z.object({
-  name: z
-    .string().optional(),
+  name: z.string().optional(),
   username: z
     .string()
     .min(3, { message: "Username must be at least 3 characters long." }),
   password: z
     .string()
     .min(8, { message: "Password must be at least 8 characters long." }),
-  image: z.
-    any().optional()
+  image: z.any().optional(),
 });
 
 let userBodySchema = z.object({
-  name: z
-    .string(),
+  name: z.string(),
   username: z
     .string()
     .min(3, { message: "Username must be at least 3 characters long." }),
   password: z
     .string()
     .min(8, { message: "Password must be at least 8 characters long." }),
-  image: z
-    .any().optional()
+  image: z.any().optional(),
 });
 type User = z.infer<typeof userBodySchema>;
 
@@ -59,6 +55,12 @@ let cuteCatLikeSchema = z.object({
   post_id: z.number().gte(1),
 });
 type CuteCatLike = z.infer<typeof cuteCatLikeSchema>;
+let cuteCatCommentSchema = z.object({
+  post_id: z.number().gte(1),
+  user_id: z.number().gte(1),
+  comment: z.string(),
+});
+type CuteCatComment = z.infer<typeof cuteCatCommentSchema>;
 
 let dummyUsers: User[] = [
   {
@@ -72,7 +74,6 @@ let dummyUsers: User[] = [
     username: "sandra",
     password: "Sandra123#",
     image: null,
-
   },
   {
     name: "Kevin",
@@ -91,8 +92,10 @@ export {
   CuteCatPost,
   cuteCatLikeSchema,
   CuteCatLike,
-  mapPostSchema, 
-  MapPost, 
+  mapPostSchema,
+  MapPost,
   markerSchema,
-   Marker
+  Marker,
+  cuteCatCommentSchema,
+  CuteCatComment,
 };

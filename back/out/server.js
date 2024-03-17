@@ -202,7 +202,7 @@ app.get("/api/cuteCatPosts", authorize, async (req, res) => {
 app.get("/api/cuteCatComments", authorize, async (req, res) => {
     let result;
     try {
-        result = await db.all("SELECT * FROM cute_cat_comments");
+        result = await db.all("SELECT cute_cat_comments.id, cute_cat_comments.post_id, username, cute_cat_comments.comment FROM cute_cat_comments INNER JOIN users ON users.id = cute_cat_comments.user_id");
     }
     catch (err) {
         let error = err;

@@ -176,3 +176,19 @@
     font-size: 12px;
     margin: 0 5px;
 }
+
+.cute-cat-single-post .comments {
+    background: violet;
+    display: flex;
+    flex-direction: column;
+}
+
+.cute-cat-single-post .comments .single-comment {
+    display: flex;
+    margin: 0 5px;
+}
+
+.cute-cat-single-post .comments .single-comment .username {
+    font-weight: bold;
+    margin: 0 5px 0 0;
+}

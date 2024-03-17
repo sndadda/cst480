@@ -164,12 +164,10 @@ function CuteCatFeed() {
                                             key={id}
                                             className="single-comment"
                                         >
-                                            <p className="comment-username">
+                                            <p className="username">
                                                 {username}
                                             </p>
-                                            <p className="comment-text">
-                                                {comment}
-                                            </p>
+                                            <p className="text">{comment}</p>
                                         </div>
                                     ))}
                             </div>

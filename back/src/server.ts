@@ -537,7 +537,9 @@ io.on("connection", (socket) => {
         "INSERT INTO cute_cat_comments(post_id, user_id, comment) VALUES(?, ?, ?)",
         [postId, userId, comment]
       );
-      cuteCatComments = await db.all("SELECT * FROM cute_cat_comments");
+      cuteCatComments = await db.all(
+        "SELECT cute_cat_comments.id, cute_cat_comments.post_id, username, cute_cat_comments.comment FROM cute_cat_comments INNER JOIN users ON users.id = cute_cat_comments.user_id"
+      );
       io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE_COMMENTS, cuteCatComments);
     } catch (err) {
       let error = err as Object;

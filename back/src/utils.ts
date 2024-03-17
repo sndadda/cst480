@@ -58,7 +58,7 @@ type CuteCatLike = z.infer<typeof cuteCatLikeSchema>;
 let cuteCatCommentSchema = z.object({
   id: z.number().gte(1),
   post_id: z.number().gte(1),
-  user_id: z.number().gte(1),
+  username: z.string().min(3),
   comment: z.string(),
 });
 type CuteCatComment = z.infer<typeof cuteCatCommentSchema>;

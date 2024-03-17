@@ -159,13 +159,13 @@ function CuteCatFeed() {
                                     .filter(({ post_id }) => {
                                         return post_id === id;
                                     })
-                                    .map(({ id, user_id, comment }) => (
+                                    .map(({ id, username, comment }) => (
                                         <div
                                             key={id}
                                             className="single-comment"
                                         >
                                             <p className="comment-username">
-                                                {user_id}
+                                                {username}
                                             </p>
                                             <p className="comment-text">
                                                 {comment}

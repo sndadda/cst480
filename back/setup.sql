@@ -73,6 +73,7 @@ CREATE TABLE cute_cat_comments (
     id INTEGER PRIMARY KEY,
     post_id INTEGER,
     user_id INTEGER,
-    comment TEXT
+    comment TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

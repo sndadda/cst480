@@ -94,7 +94,7 @@ interface CuteCatLike {
 interface CuteCatComment {
     id: number;
     post_id: number;
-    user_id: number;
+    username: string;
     comment: string;
 }
 

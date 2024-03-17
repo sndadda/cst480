@@ -244,6 +244,31 @@ app.get("/api/postLikes", authorize, async (req, res) => {
   return res.status(200).json({ cuteCatLikes: result });
 });
 
+app.post('/api/uploadAvatar', upload.single('avatar'), (req, res) => {
+  const db = new sqlite3.Database('./database.db');
+  const { file } = req;
+  let id = res.locals.id;
+
+  try {
+    db.run('UPDATE users SET image = ? WHERE id = ?', [file.buffer, id], (err) => {
+      if (err) {
+        console.log(err);
+        res.status(500).send('Error updating user avatar');
+      } else {
+        res.status(200).send('User avatar updated successfully');
+      }
+    });
+    db.close();
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
+
+  
+
+  
+});
+
 
 
 //////START OF SOCKETS//////////
@@ -304,11 +329,11 @@ io.on("connection", (socket) => {
 
   socket.on(SOCKET_EVENTS.CREATE_COMMENT, async (data) => {
     try {
-      const { post_id, parent_comment_id, user_id, content } = data;
+      const { postId, parent_comment_id, userId, content } = data;
 
       const result = await db.all(
         "INSERT INTO comments(post_id, parent_comment_id, user_id, content, timestamp) VALUES(?, ?, ?, ?, DATETIME('now')) RETURNING id",
-        [post_id, parent_comment_id, user_id, content]
+        [postId, parent_comment_id, userId, content]
       );
 
       const insertedComment = await db.all(
@@ -346,6 +371,18 @@ io.on("connection", (socket) => {
     }
   });
   
+  socket.on(SOCKET_EVENTS.FETCH_MARKERS, async () => {
+    let result;
+    try {
+        result = await db.all("SELECT markers.id, latitude, longitude FROM markers INNER JOIN users ON users.id = markers.user_id");
+        socket.emit(SOCKET_EVENTS.MARKERS_FETCHED, result);
+    }
+    catch (err) {
+        let error = err as Object;
+        socket.emit(SOCKET_EVENTS.ERROR, { error: error.toString() });
+    }
+  });
+
   socket.on(SOCKET_EVENTS.CREATE_MAP_POST, async (data) => {
     let { marker_id, subject, content, image } = data;
     let mapPost: utils.MapPost[] = [];
@@ -359,12 +396,16 @@ io.on("connection", (socket) => {
     }
   
     try {
-   
 
+      const now = new Date();
+      const offset = -4.0; 
+      const localNow = new Date(now.getTime() + (3600000 * offset));
+
+      const timestampl = localNow.toISOString().slice(0, 19).replace('T', ' ');
 
       result = await db.all(
-        "INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image) VALUES(?, ?, ?, ?, DATETIME('now'), ?) RETURNING id",
-        [userId, marker_id, subject, content, image]
+        "INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image) VALUES(?, ?, ?, ?, ?, ?) RETURNING id",
+        [userId, marker_id, subject, content, timestampl, image]
       );
       console.log('post saved');
   
@@ -465,7 +506,6 @@ io.on("connection", (socket) => {
     // Emit a 'userLikesFetched' event to the client with the ids of the posts the user has liked
     socket.emit('userLikesFetched', { userLikes: userLikes.map((like) => like.post_id) });
   });
-
 
   /* Cute Cat Post Socket Events */
   socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {

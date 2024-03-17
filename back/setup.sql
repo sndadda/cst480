@@ -57,6 +57,15 @@ CREATE TABLE posts (
     FOREIGN KEY (marker_id) REFERENCES markers(id)
 );
 
+CREATE TABLE post_categories (
+    id INTEGER PRIMARY KEY,
+    post_id INTEGER,
+    category_id INTEGER,
+    FOREIGN KEY (post_id) REFERENCES posts(id),
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+
 CREATE TABLE post_likes (
     id INTEGER PRIMARY KEY,
     post_id INTEGER,

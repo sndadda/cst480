@@ -19,6 +19,11 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import IconButton from '@mui/material/IconButton';
 import CommentIcon from '@mui/icons-material/Comment';
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import SendIcon from '@mui/icons-material/Send';
+import InputAdornment from '@mui/material/InputAdornment';
 import axios from 'axios';
 import "./CatMap.css";
 
@@ -26,23 +31,44 @@ import "./CatMap.css";
 function formatTimestamp(timestamp: string) {
   const postDate = new Date(timestamp);
   const currentDate = new Date();
-  const diffInHours = Math.abs(currentDate.getTime() - postDate.getTime()) / 3600000;
+  const diffInMilliseconds = Math.abs(currentDate.getTime() - postDate.getTime());
 
+  const diffInMinutes = diffInMilliseconds / 60000;
+  if (diffInMinutes < 60) {
+    return `${Math.round(diffInMinutes)}m`;
+  }
+
+  const diffInHours = diffInMilliseconds / 3600000;
   if (diffInHours < 24) {
     return `${Math.round(diffInHours)}h`;
   } else {
     return `${Math.round(diffInHours / 24)}d`;
   }
 }
+  
+
+function getMarkerColor(timestamp: string) {
+  const postDate = new Date(timestamp);
+  const currentDate = new Date();
+  const diffInMilliseconds = Math.abs(currentDate.getTime() - postDate.getTime());
+
+  const diffInDays = diffInMilliseconds / (1000 * 60 * 60 * 24);
+  if (diffInDays < 1) {
+    return 'red';
+  } else if (diffInDays < 5) {
+    return 'orange';
+  } else {
+    return 'grey';
+  }
+}
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoic25kYWRkYTYzIiwiYSI6ImNsc3RtdnZrODBxaDkya21xdDUyMzVseWYifQ.1LO5AE0xSXX9ndA9l1lcZw'
 function CatMap() {
  
-    const [commentData, setCommentData] = useState({
-        parent_comment_id: '',
-        content: ''
+    const [commentFormData, setCommentFormData] = useState({
+        content: '',
     });
-    const [username, setUsername] = useState('');
+    const [formData, setFormData] = useState<{subject: string, content: string, image: File | null}>({subject: '', content: '', image: null });
     const mapContainer = useRef<HTMLDivElement | null>(null);
     const [markers, setMarkers] = useState<Marker[]>([]);
     // Add a new state for the last created marker
@@ -50,18 +76,16 @@ function CatMap() {
     const map = useRef<mapboxgl.Map | null>(null);
     const geolocate = useRef<mapboxgl.GeolocateControl | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [formData, setFormData] = useState<{subject: string, content: string, image: File | null}>({subject: '', content: '', image: null });
+
     const [markerPos, setMarkerPos] = useState({ latitude: 0, longitude: 0 });
     const [isPostsModalOpen, setIsPostsModalOpen] = useState(false);
-    const [isPostsOpen, setIsPostsOpen] = useState(false);
     const [selectedPosts, setSelectedPosts] = useState<MapPost[]>([]);
-    const [lastMarkerId, setLastMarkerId] = useState(0);
     let [posts, setPosts] = useState<MapPost[]>([]);
     const [name, setName] = useState('');
     const [imageURL, setImageURL] = useState<string | null>(null);
     const [userId, setUserId] = useState(null);
     const [userLikes, setUserLikes] = useState<number[]>([]);
-
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
     useEffect(() => {
         socket.connect();
        
@@ -88,6 +112,27 @@ function CatMap() {
         });
         map.current.addControl(geolocate.current, 'top-right');
 
+        map.current.on('load', () => {
+          socket.emit(SOCKET_EVENTS.FETCH_MARKERS);
+
+          socket.on(SOCKET_EVENTS.MARKERS_FETCHED, (markers: Marker[]) => {
+            setMarkers(markers);
+            markers.forEach((marker: Marker) => {
+              const mapboxMarker = new mapboxgl.Marker()
+                .setLngLat([marker.longitude, marker.latitude])
+                .addTo(map.current!);
+          
+              // Associate a click event with the marker
+              mapboxMarker.getElement().addEventListener('click', (event) => {
+                event.stopPropagation();
+                // Fetch the posts associated with the marker
+                socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
+                setIsPostsModalOpen(true);
+              });
+            });
+          });
+        });
+
         map.current.on('click', (event) => {
           // If the map is not zoomed in enough
           if (map.current!.getZoom() < 10) {
@@ -105,9 +150,8 @@ function CatMap() {
           setIsModalOpen(true);
           setMarkerPos({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
         });
-       
-
-        socket.emit(SOCKET_EVENTS.FETCH_MARKERS);
+        
+     
 
         socket.on(SOCKET_EVENTS.MARKER_CREATED, (marker) => {
 
@@ -121,22 +165,6 @@ function CatMap() {
           });
         });
 
-        socket.on(SOCKET_EVENTS.MARKERS_FETCHED, (markers: Marker[]) => {
-          setMarkers(markers);
-          markers.forEach((marker: Marker) => {
-            const mapboxMarker = new mapboxgl.Marker()
-              .setLngLat([marker.longitude, marker.latitude])
-              .addTo(map.current!);
-        
-            // Associate a click event with the marker
-            mapboxMarker.getElement().addEventListener('click', (event) => {
-              event.stopPropagation();
-              // Fetch the posts associated with the marker
-              socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
-              setIsPostsModalOpen(true);
-            });
-          });
-        });
 
         socket.on(SOCKET_EVENTS.MAP_POSTS_FETCHED, (posts) => {
           console.log(posts);
@@ -165,12 +193,11 @@ function CatMap() {
 
         socket.emit('fetchUserLikes', { userId });
 
-  socket.on('userLikesFetched', (data) => {
-    const { userLikes } = data;
+        socket.on('userLikesFetched', (data) => {
+          const { userLikes } = data;
 
-    // Set the userLikes state
-    setUserLikes(userLikes);
-  });
+          setUserLikes(userLikes);
+        });
         socket.on('postLiked', (data) => {
           const { postId, likes } = data;
         
@@ -196,11 +223,13 @@ function CatMap() {
 
         axios.get('/api/loggedin')
           .then(response => {
-            if (response.data.loggedIn) {
-              setName(response.data.name);
-              setUserId(response.data.userId);
-            }
-          })
+              if (response.data.loggedIn) {
+                  setName(response.data.name);
+                  setUserId(response.data.userId);
+
+                  socket.emit('fetchUserLikes', { userId: response.data.userId });
+              }
+            })
           .catch(error => {
             console.log(error);
           });
@@ -208,7 +237,7 @@ function CatMap() {
          
     }, []);
 
- 
+  
 
     const handlePostClick = () => {
       // Convert the image to a base64 string
@@ -239,11 +268,19 @@ function CatMap() {
 
    
     const handleLikePost = (postId: number) => {
-      // Emit the 'likePost' event to the server
       socket.emit('likePost', { postId, userId });
+      // Update local storage
+      const updatedUserLikes = userLikes.includes(postId)
+        ? userLikes.filter((id) => id !== postId)
+        : [...userLikes, postId];
+      localStorage.setItem('userLikes', JSON.stringify(updatedUserLikes));
     };
 
     const handleCommentPost = (postId: number) => {
+      const commentData = { ...commentFormData, post_id: postId, parent_comment_id: 0, user_id: userId };
+      socket.emit(SOCKET_EVENTS.CREATE_COMMENT, commentData);
+
+      setCommentFormData({ content: '' });
   
     };
     return (
@@ -259,12 +296,12 @@ function CatMap() {
             <Fade in={isPostsModalOpen}>
             <Box sx={{ 
               position: 'relative', 
-              width: '65%', 
-              minHeight: '150px', 
+              width: '72%',
+              maxHeight: '85vh',
               bgcolor: 'background.paper', 
               p: 2, 
               mx: 'auto', 
-              my: '10%', 
+              my: '5%', 
               borderRadius: 2,
               overflowY: 'auto' //scroll
             }}>
@@ -293,13 +330,25 @@ function CatMap() {
                     </Box>
                 
                     <p style={{ marginBottom: '20px' }}>{post.content}</p>
-                    {post.image && <img className="preview-image" src={post.image} alt="Post" style={{ marginTop: '20px' }} />}
-                    {userLikes.includes(post.id) ? (
+
+                    {post.image && (
+                      <>
+                        <Divider variant="middle" sx={{ marginTop: 2, width: '100%', padding: 0, margin: 0 }} />
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                          <img className="preview-image" src={post.image} alt="Post" style={{ marginTop: '20px', width: '80%', height: 'auto' }} />
+                        </div>
+                      </>
+                    )}
+
+                    
+                    <Divider variant="middle" sx={{ marginTop: 2, width: '100%', paddingBottom: '20px', margin: 0 }} />
+                    {userLikes.includes(post.id) ? ( //heart
                       <FavoriteIcon id={`post-${post.id}-heart-icon`} onClick={() => handleLikePost(post.id)} style={{ color: 'red' }} />
                     ) : (
                       <FavoriteBorderIcon id={`post-${post.id}-heart-icon`} onClick={() => handleLikePost(post.id)} />
                     )}
                     <span id={`post-${post.id}-like-count`}>{post.likes}</span>
+
                     <IconButton
                       onMouseEnter={(event) => event.currentTarget.style.color = 'blue'}
                       onMouseLeave={(event) => event.currentTarget.style.color = ''}
@@ -307,6 +356,45 @@ function CatMap() {
                     >
                     <CommentIcon />
                     </IconButton>
+
+                    <Divider variant="middle" sx={{ marginTop: 2, width: '100%', margin: 0 }} />
+
+                    <div style={{ position: 'sticky', bottom: 0, backgroundColor: 'white' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 0, borderRadius: 2, p: 1 }}>
+                        <Avatar sx={{ mr: 1 }}></Avatar>
+                        <TextField
+                          id="comment"
+                          value={commentFormData.content}
+                          onChange={(e) => setCommentFormData({ ...commentFormData, content: e.target.value })}
+                          placeholder="Write a comment..."
+                          variant="filled"
+                          fullWidth
+                          InputProps={{
+                            disableUnderline: true,
+                            style: {
+                              backgroundColor: '#f5f5f5',
+                              
+                            },
+
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton 
+                                  onClick={() => {
+                                  // Handle comment submission here
+                                  }}
+                                  disabled={!commentFormData.content}
+                                
+                                >
+                                  <SendIcon color={commentFormData.content ? 'primary' : 'disabled'} /> 
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                       
+                      </Box>
+                    </div>
+                    
                   </div>
 
                 ))}
@@ -360,26 +448,26 @@ function CatMap() {
                         </Box>
                         
                         <FormControl variant='outlined' fullWidth sx={{ mb: 2 }}>
-                            <InputLabel htmlFor="subject" sx={{ position: 'relative' }}>Subject</InputLabel>
-                            <OutlinedInput
-                                id="subject"
-                                value={formData.subject}
-                                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                placeholder="Subject"
-                                sx={{
-                                  height: 30, // Adjust the height as needed
-                                  borderRadius: 20, // Adjust the border radius as needed
-                                  '.MuiOutlinedInput-notchedOutline': {
-                                    borderColor: 'grey',
-                                  },
-                                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: 'black',
-                                  },
-                                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: 'blue',
-                                  },
-                                }}
-                            />
+                          <OutlinedInput
+                            id="subject"
+                            value={formData.subject}
+                            onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                            placeholder="Subject"
+                            sx={{
+                              height: 30, 
+                              borderRadius: 20, 
+                              '.MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'grey',
+                              },
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'black',
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'blue',
+                              },
+                            }}
+   
+                          />
                         </FormControl>
                         <TextField
                             autoFocus
@@ -429,8 +517,27 @@ function CatMap() {
                         '.MuiFilledInput-underline:after': { borderBottom: 'none' }
                     }}
                 />
+                <Box display="flex" alignItems="center" p={1} bgcolor="background.paper" borderRadius={3} border={1} borderColor="grey.500" mb={2}>
+                  <Box flexGrow={1} p={1}>
+                    <Typography fontWeight={500}>Add to your post</Typography>
+                  </Box>
+                  <IconButton
+                    color="primary"
+                    aria-label="upload picture"
+                    component="span"
+                    onClick={(e) => {
+                      if (fileInputRef.current) {
+                        fileInputRef.current.click();
+                      }
+                    }}
+                  >
+                    <PhotoCamera />
+                  </IconButton>
+                </Box>
                 <input
                   type="file"
+                  style={{ display: 'none' }}
+                  ref={fileInputRef}
                   onChange={(e) => {
                     setFormData({
                       ...formData,
@@ -457,7 +564,7 @@ function CatMap() {
                       width: '100%', 
                       mx: 'auto',
                       color: formData.content ? 'white' : '#BCC0C4',
-                      backgroundColor: formData.content ? '#0861' : '#E5E6EB',
+                      backgroundColor: formData.content ? '#0861F2' : '#E5E6EB',
                       '&:hover': {
                         backgroundColor: formData.content ? '#0861F2' : '#E5E6EB',
                       },

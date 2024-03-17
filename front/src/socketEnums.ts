@@ -1,6 +1,9 @@
 const SOCKET_EVENTS = {
     CREATE_POST: "create_post",
     CREATE_COMMENT: "create_comment",
+    COMMENT_CREATED: "comment_created",
+    FETCH_COMMENTS: "fetch_comments",
+    COMMENTS_FETCHED: "comments_fetched",
     LIKE_POST: "like_post",
     LIKE_COMMENT: "like_comment",
     UPDATE_FEED: "update_feed",

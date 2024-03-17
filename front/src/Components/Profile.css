@@ -1,0 +1,35 @@
+.profile-background {
+    background-image: url('profile_background.png');
+    background-size: cover;
+    background-position: center 20px; /* Move the background image down by the height of the navbar */
+    background-repeat: no-repeat;
+    height: 250vh;
+    display: flex;
+    align-items: flex-start; /* Vertically align the avatar in the middle */
+    justify-content: flex-start; /* Horizontally align the avatar to the left */
+    padding-left: 140px; /* Add some space from the left edge */
+    padding-top: 60vh;
+  }
+  
+  .avatar-container {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .avatar-container .MuiAvatar-root {
+    width: 160px; 
+    height: 160px; 
+  }
+  
+  .avatar-container:hover .edit-icon {
+    display: block;
+  }
+  
+  .edit-icon {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    display: none;
+  }

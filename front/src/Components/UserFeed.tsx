@@ -335,6 +335,8 @@ const UserFeed = () => {
                             setDisplaySpecificPost(true);
                         }}
                     >
+
+                        {/**new changes */}
                     <CardContent>
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
                         <Avatar>{/* Avatar component goes here */}</Avatar>

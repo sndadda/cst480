@@ -67,25 +67,23 @@ function CatMap() {
     const [userId, setUserId] = useState(null);
     const [userLikes, setUserLikes] = useState<number[]>([]);
 
-    function GETRIDOFISSUES() {
+    useEffect(() => {
+        // GET RID OF ISSUES
         setCommentData({
             parent_comment_id: "",
             content: "",
         });
-        console.log(commentData);
+        commentData;
         setUsername("");
-        console.log(username);
-        console.log(markers);
+        username;
+        markers;
         setIsPostsOpen(false);
-        console.log(isPostsOpen);
+        isPostsOpen;
         setLastMarkerId(0);
-        console.log(lastMarkerId);
-        console.log(posts);
-    }
+        lastMarkerId;
+        posts;
+        // GET RID OF ISSUES
 
-    GETRIDOFISSUES();
-
-    useEffect(() => {
         socket.connect();
 
         if (map.current) return; // initialize map only once

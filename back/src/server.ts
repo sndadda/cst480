@@ -43,7 +43,7 @@ declare module "express-serve-static-core" {
 // create database "connection"
 // use absolute path to avoid this issue
 // https://github.com/TryGhost/node-sqlite3/issues/441
-let __dirname = url.fileURLToPath(new URL("..", import.meta.url));
+let __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 let dbfile = `${__dirname}database.db`;
 let db = await open({
   filename: dbfile,
@@ -258,6 +258,10 @@ app.get("/api/postLikes", authorize, async (req, res) => {
     return res.status(500).json({ error: error.toString() });
   }
   return res.status(200).json({ cuteCatLikes: result });
+});
+
+app.get("*", (req, res) => {
+  res.sendFile("public/index.html", { root: __dirname });
 });
 
 //////START OF SOCKETS//////////

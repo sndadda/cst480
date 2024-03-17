@@ -10,7 +10,7 @@ import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 
-import multer = require('multer');
+import multer = require("multer");
 const upload = multer({
   limits: {
     fieldSize: 5 * 1024 * 1024, // 5 Mb
@@ -33,7 +33,7 @@ let io = new Server(server, {
   },
   maxHttpBufferSize: 1e8, // 100 MB
 });
-declare module 'express-serve-static-core' {
+declare module "express-serve-static-core" {
   interface Request {
     file: any;
   }
@@ -86,7 +86,10 @@ app.get("/api/loggedin", async (req, res) => {
   }
   let result;
   try {
-    result = await db.all("SELECT users.id, users.name FROM tokens JOIN users ON tokens.user_id = users.id WHERE token=?", [token]);
+    result = await db.all(
+      "SELECT users.id, users.name FROM tokens JOIN users ON tokens.user_id = users.id WHERE token=?",
+      [token]
+    );
   } catch (err) {
     let error = err as Object;
     return res.status(500).json({ error: error.toString() });
@@ -199,7 +202,6 @@ app.post("/api/logout", async (req, res) => {
   return res.status(204).clearCookie("token", cookieOptions).json();
 });
 
-
 app.get("/api/cuteCatPosts", authorize, async (req, res) => {
   let result: utils.CuteCatPost[];
   try {
@@ -212,6 +214,19 @@ app.get("/api/cuteCatPosts", authorize, async (req, res) => {
     return res.status(500).json({ error: error.toString() });
   }
   return res.status(200).json({ cuteCatPosts: result });
+});
+
+app.get("/api/cuteCatComments", authorize, async (req, res) => {
+  let result: utils.CuteCatComment[];
+  try {
+    result = await db.all(
+      "SELECT cute_cat_comments.id, cute_cat_comments.post_id, username, cute_cat_comments.comment FROM cute_cat_comments INNER JOIN users ON users.id = cute_cat_comments.user_id"
+    );
+  } catch (err) {
+    let error = err as Object;
+    return res.status(500).json({ error: error.toString() });
+  }
+  return res.status(200).json({ cuteCatComments: result });
 });
 
 app.get("/api/cuteCatLikes", authorize, async (req, res) => {
@@ -243,8 +258,6 @@ app.get("/api/postLikes", authorize, async (req, res) => {
   }
   return res.status(200).json({ cuteCatLikes: result });
 });
-
-
 
 //////START OF SOCKETS//////////
 
@@ -392,20 +405,23 @@ io.on("connection", (socket) => {
     }
   });
 
-
   socket.on(SOCKET_EVENTS.MARKER, async (data) => {
     let { latitude, longitude } = data;
     let marker: utils.Marker[] = [];
     let result;
-    
+
     try {
       result = await db.all(
         "INSERT INTO markers(user_id, latitude, longitude) VALUES (?, ?, ?) RETURNING id",
         [userId, latitude, longitude]
       );
-  
-      socket.emit(SOCKET_EVENTS.MARKER_CREATED, { id: result[0].id, latitude, longitude });
-  
+
+      socket.emit(SOCKET_EVENTS.MARKER_CREATED, {
+        id: result[0].id,
+        latitude,
+        longitude,
+      });
+
       let updatedMarkers: utils.Marker[];
       updatedMarkers = await db.all(
         "SELECT markers.id, latitude, longitude FROM markers INNER JOIN users ON users.id = markers.user_id"
@@ -416,79 +432,81 @@ io.on("connection", (socket) => {
       socket.emit(SOCKET_EVENTS.MARKER_ERROR, { error: error.toString() });
     }
   });
-  
+
   socket.on(SOCKET_EVENTS.CREATE_MAP_POST, async (data) => {
     let { marker_id, subject, content, image } = data;
     let mapPost: utils.MapPost[] = [];
     let result;
     let base64Image = "";
     console.log(data);
-  
+
     if (!marker_id || !content) {
-      socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: 'Missing required data' });
+      socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: "Missing required data" });
       return;
     }
-  
+
     try {
-   
-
-
       result = await db.all(
         "INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image) VALUES(?, ?, ?, ?, DATETIME('now'), ?) RETURNING id",
         [userId, marker_id, subject, content, image]
       );
-      console.log('post saved');
-  
+      console.log("post saved");
+
       if (!result || result.length === 0) {
-        socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: 'Failed to create post' });
+        socket.emit(SOCKET_EVENTS.MAP_ERROR, {
+          error: "Failed to create post",
+        });
         return;
       }
-  
-      
+
       mapPost = await db.all(
         "SELECT posts.id, username, subject, content, image, timestamp FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?",
         [marker_id]
       );
       io.emit(SOCKET_EVENTS.MAP_UPDATE, mapPost);
-  
+
       // Fetch and log the newly created post
-      const newPost = await db.all("SELECT * FROM posts WHERE id = ?", [result[0].id]);
+      const newPost = await db.all("SELECT * FROM posts WHERE id = ?", [
+        result[0].id,
+      ]);
       console.log(newPost);
-      console.log('Creating post with marker_id:', marker_id);
+      console.log("Creating post with marker_id:", marker_id);
     } catch (err) {
       let error = err as Object;
       socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
     }
   });
-  
+
   socket.on(SOCKET_EVENTS.FETCH_MAP_POSTS, async (data) => {
     let { marker_id } = data;
     let posts;
-    console.log('Fetching posts for marker_id:', marker_id);
-  
+    console.log("Fetching posts for marker_id:", marker_id);
+
     try {
       posts = await db.all(
         "SELECT posts.*, users.name FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?",
         [marker_id]
       );
-      console.log('Fetched posts:', posts);
+      console.log("Fetched posts:", posts);
       // Convert the Buffer image data back to a base64 string
-      posts.forEach(post => {
+      posts.forEach((post) => {
         if (post.image) {
-          post.image = `data:image/jpeg;base64,${post.image.toString('base64')}`;
+          post.image = `data:image/jpeg;base64,${post.image.toString(
+            "base64"
+          )}`;
         }
       });
-  
+
       socket.emit(SOCKET_EVENTS.MAP_POSTS_FETCHED, posts);
     } catch (err) {
       let error = err as Object;
-      console.log(`Error fetching posts: ${error.toString()}`); 
+      console.log(`Error fetching posts: ${error.toString()}`);
       socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
     }
   });
-  socket.on('likePost', async (data) => {
+  socket.on("likePost", async (data) => {
     const { postId, userId } = data;
-  
+
     // Check if a like from the current user already exists for the post
     const userLike = await db.get(
       "SELECT * FROM post_likes WHERE post_id = ? AND user_id = ?",
@@ -496,47 +514,48 @@ io.on("connection", (socket) => {
     );
     if (userLike) {
       // Remove the like
-      await db.run(
-        "DELETE FROM post_likes WHERE post_id = ? AND user_id = ?",
-        [postId, userId]
-      );
+      await db.run("DELETE FROM post_likes WHERE post_id = ? AND user_id = ?", [
+        postId,
+        userId,
+      ]);
     } else {
       // Add a new like
-      await db.run(
-        "INSERT INTO post_likes(post_id, user_id) VALUES (?, ?)",
-        [postId, userId]
-      );
+      await db.run("INSERT INTO post_likes(post_id, user_id) VALUES (?, ?)", [
+        postId,
+        userId,
+      ]);
     }
-  
+
     // Get the new like count
     const likes = await db.get(
       "SELECT COUNT(*) as count FROM post_likes WHERE post_id = ?",
       [postId]
     );
-  
+
     // Update the like count in the posts table
-    await db.run(
-      "UPDATE posts SET likes = ? WHERE id = ?",
-      [likes.count, postId]
-    );
-  
+    await db.run("UPDATE posts SET likes = ? WHERE id = ?", [
+      likes.count,
+      postId,
+    ]);
+
     // Emit a 'postLiked' event to the client with the postId and the new like count
-    socket.emit('postLiked', { postId, likes: likes.count });
+    socket.emit("postLiked", { postId, likes: likes.count });
   });
 
-  socket.on('fetchUserLikes', async (data) => {
+  socket.on("fetchUserLikes", async (data) => {
     const { userId } = data;
-  
+
     // Get the ids of the posts the user has liked
     const userLikes = await db.all(
       "SELECT post_id FROM post_likes WHERE user_id = ?",
       [userId]
     );
-  
-    // Emit a 'userLikesFetched' event to the client with the ids of the posts the user has liked
-    socket.emit('userLikesFetched', { userLikes: userLikes.map((like) => like.post_id) });
-  });
 
+    // Emit a 'userLikesFetched' event to the client with the ids of the posts the user has liked
+    socket.emit("userLikesFetched", {
+      userLikes: userLikes.map((like) => like.post_id),
+    });
+  });
 
   /* Cute Cat Post Socket Events */
   socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {
@@ -575,6 +594,26 @@ io.on("connection", (socket) => {
         let error = err as Object;
         socket.emit(SOCKET_EVENTS.CUTE_CAT_ERROR, { error: error.toString() });
       }
+    } catch (err) {
+      let error = err as Object;
+      io.to(socket.id).emit(SOCKET_EVENTS.CUTE_CAT_ERROR, {
+        error: error.toString(),
+      });
+    }
+  });
+
+  socket.on(SOCKET_EVENTS.CUTE_CAT_COMMENT, async (data) => {
+    let { postId, comment } = data;
+    let cuteCatComments: utils.CuteCatComment[] = [];
+    try {
+      await db.all(
+        "INSERT INTO cute_cat_comments(post_id, user_id, comment) VALUES(?, ?, ?)",
+        [postId, userId, comment]
+      );
+      cuteCatComments = await db.all(
+        "SELECT cute_cat_comments.id, cute_cat_comments.post_id, username, cute_cat_comments.comment FROM cute_cat_comments INNER JOIN users ON users.id = cute_cat_comments.user_id"
+      );
+      io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE_COMMENTS, cuteCatComments);
     } catch (err) {
       let error = err as Object;
       io.to(socket.id).emit(SOCKET_EVENTS.CUTE_CAT_ERROR, {

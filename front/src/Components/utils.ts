@@ -115,4 +115,5 @@ export type {
     MapPost,
     CuteCatComment,
     CuteCatCommentSubmit,
+    PostLike,
 };

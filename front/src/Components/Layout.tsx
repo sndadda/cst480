@@ -1,10 +1,10 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { getAxiosErrorMessages, getServerErrorMessages } from "./utils";
-import Avatar from '@mui/material/Avatar';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
+import Avatar from "@mui/material/Avatar";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import "./Layout.css";
 import Login from "./Login";
 
@@ -32,18 +32,25 @@ function Header({ setRefresh, name, setName }: any) {
                 <Link to="/feed">Feed</Link>
                 <Link to="/cuteCatFeed">Cute Cats</Link>
             </div>
-            <div className="profile-section" style={{ display: 'flex', alignItems: 'center' }}>
-                {name && <span style={{ color: 'black', marginRight: '10px' }}>Welcome, {name}</span>}
-                <Avatar
-                    onClick={(event) => setAnchorEl(event.currentTarget)}
-                />
+            <div
+                className="profile-section"
+                style={{ display: "flex", alignItems: "center" }}
+            >
+                {name && (
+                    <span style={{ color: "black", marginRight: "10px" }}>
+                        Welcome, {name}
+                    </span>
+                )}
+                <Avatar onClick={(event) => setAnchorEl(event.currentTarget)} />
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
                     onClose={() => setAnchorEl(null)}
                 >
-                <MenuItem onClick={() => navigate('/profile')}>Settings</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                    <MenuItem onClick={() => navigate("/profile")}>
+                        Settings
+                    </MenuItem>
+                    <MenuItem onClick={handleLogout}>Logout</MenuItem>
                 </Menu>
             </div>
         </>
@@ -60,7 +67,9 @@ function Layout() {
             try {
                 let {
                     data: { loggedIn, name },
-                } = await axios.get<{ loggedIn: boolean, name: string }>("/api/loggedin");
+                } = await axios.get<{ loggedIn: boolean; name: string }>(
+                    "/api/loggedin"
+                );
                 setLoggedInStatus(loggedIn);
                 setName(name);
             } catch (error) {

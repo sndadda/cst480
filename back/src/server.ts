@@ -27,7 +27,7 @@ let server = http.createServer(app);
 
 let io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "http://localhost:5174",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -593,7 +593,7 @@ io.on("connection", (socket) => {
 //////END OF SOCKETS//////////
 
 // run server
-let port = 3000;
+let port = 3001;
 let host = "localhost";
 let protocol = "http";
 // app.listen(port, host, () => {

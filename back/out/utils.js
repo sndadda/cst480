@@ -1,27 +1,23 @@
 import { z } from "zod";
 let loginUserBodySchema = z.object({
-    name: z
-        .string().optional(),
+    name: z.string().optional(),
     username: z
         .string()
         .min(3, { message: "Username must be at least 3 characters long." }),
     password: z
         .string()
         .min(8, { message: "Password must be at least 8 characters long." }),
-    image: z.
-        any().optional()
+    image: z.any().optional(),
 });
 let userBodySchema = z.object({
-    name: z
-        .string(),
+    name: z.string(),
     username: z
         .string()
         .min(3, { message: "Username must be at least 3 characters long." }),
     password: z
         .string()
         .min(8, { message: "Password must be at least 8 characters long." }),
-    image: z
-        .any().optional()
+    image: z.any().optional(),
 });
 let cuteCatPostSchema = z.object({
     id: z.number().gte(1),
@@ -49,6 +45,12 @@ let mapPostSchema = z.object({
 let cuteCatLikeSchema = z.object({
     post_id: z.number().gte(1),
 });
+let cuteCatCommentSchema = z.object({
+    id: z.number().gte(1),
+    post_id: z.number().gte(1),
+    username: z.string().min(3),
+    comment: z.string(),
+});
 let dummyUsers = [
     {
         name: "Francisco",
@@ -69,4 +71,4 @@ let dummyUsers = [
         image: null,
     },
 ];
-export { loginUserBodySchema, userBodySchema, dummyUsers, cuteCatPostSchema, cuteCatLikeSchema, mapPostSchema, markerSchema };
+export { loginUserBodySchema, userBodySchema, dummyUsers, cuteCatPostSchema, cuteCatLikeSchema, mapPostSchema, markerSchema, cuteCatCommentSchema, };

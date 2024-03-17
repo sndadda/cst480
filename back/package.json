@@ -5,7 +5,8 @@
     "test-data": "cd out && node dummy.js",
     "start": "cd out && node server.js",
     "watch": "npm run build && tsc-watch --onSuccess \"npm run start\"",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --rootDir=src"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --rootDir=src",
+    "build:deploy": "npm run build && cd ../front && npm run build && mv dist ../back/out/public"
   },
   "type": "module",
   "dependencies": {

@@ -46,6 +46,7 @@ let cuteCatLikeSchema = z.object({
     post_id: z.number().gte(1),
 });
 let cuteCatCommentSchema = z.object({
+    id: z.number().gte(1),
     post_id: z.number().gte(1),
     user_id: z.number().gte(1),
     comment: z.string(),

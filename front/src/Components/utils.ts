@@ -87,9 +87,20 @@ interface MapPost {
     image: string;
 }
 
-
 interface CuteCatLike {
     post_id: number;
+}
+
+interface CuteCatComment {
+    id: number;
+    post_id: number;
+    user_id: number;
+    comment: string;
+}
+
+interface CuteCatCommentSubmit {
+    postId: number;
+    comment: string;
 }
 
 interface PostLike {
@@ -97,5 +108,11 @@ interface PostLike {
 }
 
 export { getServerErrorMessages, getAxiosErrorMessages };
-export type { CuteCatLike, CuteCatPost, Marker, MapPost };
-
+export type {
+    CuteCatLike,
+    CuteCatPost,
+    Marker,
+    MapPost,
+    CuteCatComment,
+    CuteCatCommentSubmit,
+};

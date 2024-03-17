@@ -202,7 +202,7 @@ app.get("/api/cuteCatPosts", authorize, async (req, res) => {
 app.get("/api/cuteCatComments", authorize, async (req, res) => {
     let result;
     try {
-        result = await db.all("SELECT post_id, user_id, comment FROM cute_cat_comments");
+        result = await db.all("SELECT * FROM cute_cat_comments");
     }
     catch (err) {
         let error = err;
@@ -450,7 +450,7 @@ io.on("connection", (socket) => {
         let cuteCatComments = [];
         try {
             await db.all("INSERT INTO cute_cat_comments(post_id, user_id, comment) VALUES(?, ?, ?)", [postId, userId, comment]);
-            cuteCatComments = await db.all("SELECT post_id, user_id, comment FROM cute_cat_comments");
+            cuteCatComments = await db.all("SELECT * FROM cute_cat_comments");
             io.emit(SOCKET_EVENTS.CUTE_CAT_UPDATE_COMMENTS, cuteCatComments);
         }
         catch (err) {

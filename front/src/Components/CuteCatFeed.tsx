@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { socket } from "../socket.tsx";
 import SOCKET_EVENTS from "../socketEnums.js";
-import { CuteCatLike, CuteCatPost, getAxiosErrorMessages } from "./utils.ts";
+import {
+    CuteCatComment,
+    CuteCatCommentSubmit,
+    CuteCatLike,
+    CuteCatPost,
+    getAxiosErrorMessages,
+} from "./utils.ts";
 import axios from "axios";
 import { FaUserCircle } from "react-icons/fa";
 import { FaHeart } from "react-icons/fa6";
@@ -15,6 +21,11 @@ function CuteCatFeed() {
     });
     let [posts, setPosts] = useState<CuteCatPost[]>([]);
     let [likedPosts, setLikedPosts] = useState<CuteCatLike[]>([]);
+    let [newComment, setNewComment] = useState<CuteCatCommentSubmit>({
+        postId: 0,
+        comment: "",
+    });
+    let [comments, setComments] = useState<CuteCatComment[]>([]);
 
     useEffect(() => {
         (async () => {
@@ -31,6 +42,12 @@ function CuteCatFeed() {
                     "/api/cuteCatLikes"
                 );
                 setLikedPosts(cuteCatLikes);
+                let {
+                    data: { cuteCatComments },
+                } = await axios.get<{ cuteCatComments: CuteCatComment[] }>(
+                    "/api/cuteCatComments"
+                );
+                setComments(cuteCatComments);
                 setMessages([]);
             } catch (error) {
                 setMessages(getAxiosErrorMessages(error));
@@ -46,6 +63,9 @@ function CuteCatFeed() {
         socket.on(SOCKET_EVENTS.CUTE_CAT_UPDATE_LIKES, (data) => {
             setLikedPosts(data);
         });
+        socket.on(SOCKET_EVENTS.CUTE_CAT_UPDATE_COMMENTS, (data) => {
+            setComments(data);
+        });
         socket.on(SOCKET_EVENTS.CUTE_CAT_ERROR, (data) => {
             if (!data) {
                 setMessages([]);
@@ -56,6 +76,7 @@ function CuteCatFeed() {
         return () => {
             socket.off(SOCKET_EVENTS.CUTE_CAT_UPDATE);
             socket.off(SOCKET_EVENTS.CUTE_CAT_UPDATE_LIKES);
+            socket.off(SOCKET_EVENTS.CUTE_CAT_UPDATE_COMMENTS);
             socket.off(SOCKET_EVENTS.CUTE_CAT_ERROR);
             socket.disconnect();
         };
@@ -76,6 +97,19 @@ function CuteCatFeed() {
             postId: postId,
             increment: 1,
         });
+    }
+
+    function handleComment() {
+        if (!newComment.comment) {
+            return;
+        } else {
+            setMessages([]);
+            socket.emit(SOCKET_EVENTS.CUTE_CAT_COMMENT, newComment);
+            setNewComment({
+                postId: 0,
+                comment: "",
+            });
+        }
     }
 
     // https://stackoverflow.com/questions/4587061/how-to-determine-if-object-is-in-array
@@ -119,6 +153,55 @@ function CuteCatFeed() {
                             <div className="caption-box">
                                 <p className="username">{username}</p>
                                 <p className="caption">{caption}</p>
+                            </div>
+                            <div className="comment-section">
+                                <div className="comments">
+                                    {comments
+                                        .filter(({ post_id }) => {
+                                            return post_id === id;
+                                        })
+                                        .map(({ id, username, comment }) => (
+                                            <div
+                                                key={id}
+                                                className="single-comment"
+                                            >
+                                                <p className="username">
+                                                    {username}
+                                                </p>
+                                                <p className="text">
+                                                    {comment}
+                                                </p>
+                                            </div>
+                                        ))}
+                                </div>
+                                <div className="add-comment">
+                                    <div className="comment-box">
+                                        <textarea
+                                            value={newComment.comment}
+                                            placeholder="Add a comment..."
+                                            id="comment"
+                                            onChange={(e) => {
+                                                setNewComment({
+                                                    postId: id,
+                                                    comment: e.target.value,
+                                                });
+                                            }}
+                                            rows={2}
+                                        ></textarea>
+                                    </div>
+                                    {newComment.comment &&
+                                    newComment.postId === id ? (
+                                        <button
+                                            onClick={() => {
+                                                handleComment();
+                                            }}
+                                        >
+                                            Post comment
+                                        </button>
+                                    ) : (
+                                        <></>
+                                    )}
+                                </div>
                             </div>
                             <div className="time-stamp">
                                 <div className="time">{timestamp}</div>

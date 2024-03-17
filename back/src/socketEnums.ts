@@ -13,8 +13,10 @@ const SOCKET_EVENTS = {
   ERROR: "error",
   CUTE_CAT_POST: "cute_cat_post",
   CUTE_CAT_LIKE: "cute_cat_like",
+  CUTE_CAT_COMMENT: "cute_cat_comment",
   CUTE_CAT_UPDATE: "cute_cat_update",
   CUTE_CAT_UPDATE_LIKES: "cute_cat_update_likes",
+  CUTE_CAT_UPDATE_COMMENTS: "cute_cat_update_comments",
   CUTE_CAT_ERROR: "cute_cat_error",
   MARKER: "marker",
   FETCH_MARKERS: "fetch_markers",
@@ -27,7 +29,6 @@ const SOCKET_EVENTS = {
   MAP_POSTS_FETCHED: "map_posts_fetched",
   MAP_UPDATE: "map_update",
   MAP_ERROR: "map_error",
-
 };
 
 export default SOCKET_EVENTS;

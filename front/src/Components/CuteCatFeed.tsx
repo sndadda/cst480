@@ -154,45 +154,54 @@ function CuteCatFeed() {
                                 <p className="username">{username}</p>
                                 <p className="caption">{caption}</p>
                             </div>
-                            <div className="comments">
-                                {comments
-                                    .filter(({ post_id }) => {
-                                        return post_id === id;
-                                    })
-                                    .map(({ id, username, comment }) => (
-                                        <div
-                                            key={id}
-                                            className="single-comment"
-                                        >
-                                            <p className="username">
-                                                {username}
-                                            </p>
-                                            <p className="text">{comment}</p>
-                                        </div>
-                                    ))}
-                            </div>
-                            <div className="add-comment-section">
-                                <div className="comment-box">
-                                    <textarea
-                                        value={newComment.comment}
-                                        placeholder="Add comment..."
-                                        id="comment"
-                                        onChange={(e) => {
-                                            setNewComment({
-                                                postId: id,
-                                                comment: e.target.value,
-                                            });
-                                        }}
-                                        rows={2}
-                                    ></textarea>
+                            <div className="comment-section">
+                                <div className="comments">
+                                    {comments
+                                        .filter(({ post_id }) => {
+                                            return post_id === id;
+                                        })
+                                        .map(({ id, username, comment }) => (
+                                            <div
+                                                key={id}
+                                                className="single-comment"
+                                            >
+                                                <p className="username">
+                                                    {username}
+                                                </p>
+                                                <p className="text">
+                                                    {comment}
+                                                </p>
+                                            </div>
+                                        ))}
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        handleComment();
-                                    }}
-                                >
-                                    Submit
-                                </button>
+                                <div className="add-comment">
+                                    <div className="comment-box">
+                                        <textarea
+                                            value={newComment.comment}
+                                            placeholder="Add a comment..."
+                                            id="comment"
+                                            onChange={(e) => {
+                                                setNewComment({
+                                                    postId: id,
+                                                    comment: e.target.value,
+                                                });
+                                            }}
+                                            rows={2}
+                                        ></textarea>
+                                    </div>
+                                    {newComment.comment &&
+                                    newComment.postId === id ? (
+                                        <button
+                                            onClick={() => {
+                                                handleComment();
+                                            }}
+                                        >
+                                            Post comment
+                                        </button>
+                                    ) : (
+                                        <></>
+                                    )}
+                                </div>
                             </div>
                             <div className="time-stamp">
                                 <div className="time">{timestamp}</div>

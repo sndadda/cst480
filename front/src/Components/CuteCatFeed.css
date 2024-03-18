@@ -148,12 +148,17 @@
 .cute-cat-single-post .interactions .liked {
     color: red;
     align-self: center;
+    cursor: pointer;
     font-size: 20px;
     margin: 5px;
 }
 
 .cute-cat-single-post .interactions .like-button:hover {
     color: red;
+}
+
+.cute-cat-single-post .interactions .liked:hover {
+    opacity: 0.6;
 }
 
 .cute-cat-single-post .caption-box {

@@ -91,11 +91,11 @@ function CuteCatFeed() {
         });
     };
 
-    function handleLike(postId: number) {
+    function handleLike(postId: number, increment: number) {
         setMessages([]);
         socket.emit(SOCKET_EVENTS.CUTE_CAT_LIKE, {
             postId: postId,
-            increment: 1,
+            increment: increment,
         });
     }
 
@@ -139,12 +139,17 @@ function CuteCatFeed() {
                             </div>
                             <div className="interactions">
                                 {containsObject({ post_id: id }, likedPosts) ? (
-                                    <FaHeart className="liked" />
+                                    <FaHeart
+                                        className="liked"
+                                        onClick={() => {
+                                            handleLike(id, -1);
+                                        }}
+                                    />
                                 ) : (
                                     <FaHeart
                                         className="like-button"
                                         onClick={() => {
-                                            handleLike(id);
+                                            handleLike(id, 1);
                                         }}
                                     />
                                 )}

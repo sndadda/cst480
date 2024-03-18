@@ -177,12 +177,22 @@ function CuteCatFeed() {
                                 <div className="add-comment">
                                     <div className="comment-box">
                                         <textarea
-                                            value={newComment.comment}
+                                            value={
+                                                newComment.postId === id
+                                                    ? newComment.comment
+                                                    : ""
+                                            }
                                             placeholder="Add a comment..."
                                             id="comment"
+                                            onClick={() => {
+                                                setNewComment({
+                                                    ...newComment,
+                                                    postId: id,
+                                                });
+                                            }}
                                             onChange={(e) => {
                                                 setNewComment({
-                                                    postId: id,
+                                                    ...newComment,
                                                     comment: e.target.value,
                                                 });
                                             }}

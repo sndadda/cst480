@@ -14,12 +14,10 @@ function Profile() {
   useEffect(() => {
     socket.connect();
 
-    // Fetch the current profile picture
     socket.emit(SOCKET_EVENTS.FETCH_PROFILE_PICTURE);
 
-    // Listen for the 'PROFILE_PIC_FETCHED' event and update the imageURL state
     socket.on(SOCKET_EVENTS.PROFILE_PIC_FETCHED, (data) => {
-      setImageURL(`data:image/jpeg;base64,${data.image}`);
+      setImageURL(data.image);
     });
 
   }, []);
@@ -38,7 +36,7 @@ function Profile() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImageURL(reader.result as string);
-        // Convert the image to a base64 string before emitting the event
+        // Convert the image to a base64 string
         reader.readAsDataURL(file);
         reader.onloadend = () => {
           socket.emit(SOCKET_EVENTS.UPLOAD_PROFILE_PICTURE, { image: reader.result });

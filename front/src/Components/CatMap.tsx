@@ -24,6 +24,9 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import SendIcon from '@mui/icons-material/Send';
 import InputAdornment from '@mui/material/InputAdornment';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardHeader from '@mui/material/CardHeader';
 import axios from 'axios';
 import "./CatMap.css";
 
@@ -153,7 +156,7 @@ function CatMap() {
           setMarkerPos({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
         });
         
-     
+       
 
         socket.on(SOCKET_EVENTS.MARKER_CREATED, (marker) => {
 
@@ -162,37 +165,36 @@ function CatMap() {
           .addTo(map.current!);
 
           mapboxMarker.getElement().addEventListener('click', () => {
-          // Fetch the posts associated with the marker
             socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
+
           });
         });
-
+        
 
         socket.on(SOCKET_EVENTS.MAP_POSTS_FETCHED, (posts) => {
           console.log(posts);
+          setComments([]);
           setSelectedPosts(posts);
           console.log(selectedPosts);
 
           setIsPostsModalOpen(true);
           for (let post of posts) {
-            // Fetch the comments associated with each post
             socket.emit(SOCKET_EVENTS.FETCH_COMMENTS, { post_id: post.id });
           }
         });
-
         socket.on(SOCKET_EVENTS.COMMENTS_FETCHED, (fetchedComments) => {
           setComments((prevComments) => [...prevComments, ...fetchedComments]);
         });
+
+      
         socket.on('postLiked', (data) => {
           const { postId, likeCount } = data;
         
-          // Update the like count in the UI
           const likeCountElement = document.querySelector(`#post-${postId}-like-count`);
           if (likeCountElement) {
             likeCountElement.textContent = likeCount;
           }
         
-          // Find the post that was liked and update its likeCount
           setSelectedPosts((prevPosts) =>
             prevPosts.map((post) =>
               post.id === postId ? { ...post, likeCount } : post
@@ -210,34 +212,29 @@ function CatMap() {
         socket.on('postLiked', (data) => {
           const { postId, likes } = data;
         
-          // Update the like count of the post in the selectedPosts state
           setSelectedPosts((prevPosts) =>
             prevPosts.map((post) =>
               post.id === postId ? { ...post, likes } : post
             )
           );
         
-          // Update the like count of the post in the posts state
           setPosts((prevPosts) =>
             prevPosts.map((post) =>
               post.id === postId ? { ...post, likes } : post
             )
           );
         
-          // Update the user's likes
           setUserLikes((prevLikes) =>
             prevLikes.includes(postId) ? prevLikes.filter((id) => id !== postId) : [...prevLikes, postId]
           );
         });
-
-      
 
         axios.get('/api/loggedin')
           .then(response => {
               if (response.data.loggedIn) {
                   setName(response.data.name);
                   setUserId(response.data.userId);
-                  setUserProfilePic(`data:image/jpeg;base64,${response.data.image}`);
+                  setUserProfilePic(response.data.image);
 
                   socket.emit('fetchUserLikes', { userId: response.data.userId });
               }
@@ -249,26 +246,21 @@ function CatMap() {
          
     }, []);
 
-  
 
     const handlePostClick = () => {
-      // Convert the image to a base64 string
+      // convert the image to a base64 string
       if (formData.image) {
         const reader = new FileReader();
         reader.onloadend = () => {
-          // Emit the SOCKET_EVENTS.MARKER event with the marker position and the base64 image
           socket.emit(SOCKET_EVENTS.MARKER, { ...markerPos, image: reader.result });
         };
         reader.readAsDataURL(formData.image);
       } else {
-        // Emit the SOCKET_EVENTS.MARKER event with the marker position
         socket.emit(SOCKET_EVENTS.MARKER, markerPos);
       }
 
       socket.once(SOCKET_EVENTS.MARKER_CREATED, (marker) => {
         const postData = { ...formData, marker_id: marker.id };
-        
-        // Emit the SOCKET_EVENTS.CREATE_MAP_POST event with the post data
         socket.emit(SOCKET_EVENTS.CREATE_MAP_POST, postData);
         
         setFormData({ subject: '', content: '', image: null });
@@ -278,6 +270,9 @@ function CatMap() {
       setIsModalOpen(false);
     };
 
+    useEffect(() => {
+      console.log(comments);
+    }, [comments]);
    
     const handleLikePost = (postId: number) => {
       socket.emit('likePost', { postId, userId });
@@ -372,12 +367,20 @@ function CatMap() {
 
                     {comments
                       .filter(({ post_id }) => post_id === post.id)
-                      .map(({ id, name, content }) => (
-                        <div key={id} className="single-comment">
-                          <p className="name">{name}</p>
-                          <p className="text">{content}</p>
+                      .map(({ id, name, content, timestamp }, index) => (
+                        <div key={index}>
+                          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mb: 2 }}>
+                            <Avatar src={post.userProfilePic} sx={{ mr: 2 }}></Avatar>
+                            <Box sx={{ my: 1, borderRadius: 2, backgroundColor: '#F1F2F5', flexGrow: 1 }}>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', p: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{name}</Typography>
+                                <Typography variant="body1">{content}</Typography>
+                              </Box>
+                              <Typography variant="caption" sx={{ p: 1 }}>{formatTimestamp(timestamp)}</Typography>
+                            </Box>
+                          </Box>
                         </div>
-                      ))}
+                    ))}
 
                     <div style={{ position: 'sticky', bottom: 0, backgroundColor: 'white' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mt: 0, borderRadius: 2, p: 1 }}>
@@ -462,7 +465,7 @@ function CatMap() {
                         </Box>
                         <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} />
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Avatar src={userProfilePic ? userProfilePic : undefined} sx={{ mr: 2 }}></Avatar>
+                        <Avatar src={userProfilePic} sx={{ mr: 2 }}></Avatar>
                             <Typography variant="h6">{name}</Typography>
                         </Box>
                         

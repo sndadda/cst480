@@ -100,7 +100,8 @@ app.get("/api/loggedin", async (req, res) => {
   let userId = result[0].id;
   let name = result[0].name;
   let image = result[0].image;
-  let imageBase64 = image ? image.toString('base64') : null;
+  let bufferImage = Buffer.from(image, 'binary');
+  let imageBase64 = image ? `data:image/jpeg;base64,${bufferImage.toString('base64')}` : null;
 
   return res.json({ loggedIn: true, name, userId, image: imageBase64 });
 });
@@ -592,6 +593,43 @@ io.on("connection", (socket) => {
     }
   });
   
+  
+  socket.on(SOCKET_EVENTS.UPLOAD_PROFILE_PICTURE, async (data) => {
+    let { image } = data;
+    let result;
+  
+    if (!userId || !image) {
+      socket.emit(SOCKET_EVENTS.PROFILE_ERROR, { error: "Missing required data" });
+      return;
+    }
+  
+    try {
+      const bufferImage = Buffer.from(image.split(",")[1], "base64");
+
+      result = await db.all(
+        "UPDATE users SET image = ? WHERE id = ? RETURNING id",
+        [bufferImage, userId]
+      );
+      console.log("Profile image updated");
+  
+      if (!result || result.length === 0) {
+        socket.emit(SOCKET_EVENTS.PROFILE_ERROR, {
+          error: "Failed to update profile image",
+        });
+        return;
+      }
+  
+      const updatedUser = await db.all("SELECT * FROM users WHERE id = ?", [
+        userId,
+      ]);
+      console.log(updatedUser);
+      console.log("Updating profile image for user_id:", userId);
+    } catch (err) {
+      let error = err as Object;
+      socket.emit(SOCKET_EVENTS.PROFILE_ERROR, { error: error.toString() });
+    }
+  });
+  
   socket.on(SOCKET_EVENTS.FETCH_PROFILE_PICTURE, async (data) => {
   let user;
 
@@ -603,13 +641,11 @@ io.on("connection", (socket) => {
       [userId]
     );
     console.log("Fetched profile:", user);
-    // Convert the Buffer image data back to a base64 string
-    if (user[0].avatar) {
-      user[0].avatar = `data:image/jpeg;base64,${user[0].avatar.toString(
+    if (user[0].image) {
+      user[0].image = `data:image/jpeg;base64,${user[0].image.toString(
         "base64"
       )}`;
     }
-
     socket.emit(SOCKET_EVENTS.PROFILE_PIC_FETCHED, user[0]);
   } catch (err) {
     let error = err as Object;
@@ -622,51 +658,43 @@ io.on("connection", (socket) => {
   socket.on("likePost", async (data) => {
     const { postId, userId } = data;
 
-    // Check if a like from the current user already exists for the post
     const userLike = await db.get(
       "SELECT * FROM post_likes WHERE post_id = ? AND user_id = ?",
       [postId, userId]
     );
     if (userLike) {
-      // Remove the like
       await db.run("DELETE FROM post_likes WHERE post_id = ? AND user_id = ?", [
         postId,
         userId,
       ]);
     } else {
-      // Add a new like
       await db.run("INSERT INTO post_likes(post_id, user_id) VALUES (?, ?)", [
         postId,
         userId,
       ]);
     }
 
-    // Get the new like count
     const likes = await db.get(
       "SELECT COUNT(*) as count FROM post_likes WHERE post_id = ?",
       [postId]
     );
 
-    // Update the like count in the posts table
     await db.run("UPDATE posts SET likes = ? WHERE id = ?", [
       likes.count,
       postId,
     ]);
 
-    // Emit a 'postLiked' event to the client with the postId and the new like count
     socket.emit("postLiked", { postId, likes: likes.count });
   });
 
   socket.on("fetchUserLikes", async (data) => {
     const { userId } = data;
 
-    // Get the ids of the posts the user has liked
     const userLikes = await db.all(
       "SELECT post_id FROM post_likes WHERE user_id = ?",
       [userId]
     );
 
-    // Emit a 'userLikesFetched' event to the client with the ids of the posts the user has liked
     socket.emit("userLikesFetched", {
       userLikes: userLikes.map((like) => like.post_id),
     });
@@ -702,7 +730,24 @@ io.on("connection", (socket) => {
       });
     }
   });
+  socket.on(SOCKET_EVENTS.FETCH_COMMENTS, async ({ post_id }) => {
+    let comments;
+    console.log("Fetching comments for post_id:", post_id);
   
+    try {
+      comments = await db.all(
+        "SELECT comments.*, users.name FROM comments INNER JOIN users ON users.id = comments.user_id WHERE post_id = ?",
+        [post_id]
+      );
+      console.log("Fetched comments:", comments);
+  
+      socket.emit(SOCKET_EVENTS.COMMENTS_FETCHED, comments);
+    } catch (err) {
+      let error = err as Object;
+      console.log(`Error fetching comments: ${error.toString()}`);
+      socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
+    }
+  });
 
   /* Cute Cat Post Socket Events */
   socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {

@@ -1,6 +1,11 @@
 const SOCKET_EVENTS = {
+    UPLOAD_PROFILE_PICTURE: "upload_profile_picture",
+    FETCH_PROFILE_PICTURE: "fetch_profile_picture",
+    PROFILE_ERROR: "profile_error",
+    PROFILE_PIC_FETCHED: "profile_pic_fetched",
     CREATE_POST: "create_post",
     CREATE_COMMENT: "create_comment",
+    CREATE_MAP_COMMENT: "create_map_comment",
     COMMENT_CREATED: "comment_created",
     FETCH_COMMENTS: "fetch_comments",
     COMMENTS_FETCHED: "comments_fetched",

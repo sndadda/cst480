@@ -85,6 +85,15 @@ interface MapPost {
     timestamp: string;
     likes: number;
     image: string;
+    userProfilePic: string;
+}
+interface MapPostComment {
+    id: number;
+    post_id: number;
+    name: string;
+    content: string;
+    timestamp: string;
+    likes: number;
 }
 
 interface CuteCatLike {
@@ -115,4 +124,5 @@ export type {
     MapPost,
     CuteCatComment,
     CuteCatCommentSubmit,
+    MapPostComment,
 };

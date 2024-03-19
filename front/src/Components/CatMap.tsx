@@ -14,7 +14,7 @@ import Divider from '@mui/material/Divider';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
-import { Marker, MapPost, getAxiosErrorMessages } from './utils.ts';
+import { Marker, MapPost, getAxiosErrorMessages, MapPostComment } from './utils.ts';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import IconButton from '@mui/material/IconButton';
@@ -68,10 +68,10 @@ function CatMap() {
     const [commentFormData, setCommentFormData] = useState({
         content: '',
     });
+    const [comments, setComments] = useState<MapPostComment[]>([]);
     const [formData, setFormData] = useState<{subject: string, content: string, image: File | null}>({subject: '', content: '', image: null });
     const mapContainer = useRef<HTMLDivElement | null>(null);
     const [markers, setMarkers] = useState<Marker[]>([]);
-    // Add a new state for the last created marker
     const [lastMarker, setLastMarker] = useState<mapboxgl.Marker | null>(null);
     const map = useRef<mapboxgl.Map | null>(null);
     const geolocate = useRef<mapboxgl.GeolocateControl | null>(null);
@@ -82,10 +82,12 @@ function CatMap() {
     const [selectedPosts, setSelectedPosts] = useState<MapPost[]>([]);
     let [posts, setPosts] = useState<MapPost[]>([]);
     const [name, setName] = useState('');
-    const [imageURL, setImageURL] = useState<string | null>(null);
     const [userId, setUserId] = useState(null);
     const [userLikes, setUserLikes] = useState<number[]>([]);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [imageURL, setImageURL] = useState<string | null>(null);
+    const [userProfilePic, setUserProfilePic] = useState<string | undefined>(undefined);
+
     useEffect(() => {
         socket.connect();
        
@@ -172,8 +174,15 @@ function CatMap() {
           console.log(selectedPosts);
 
           setIsPostsModalOpen(true);
+          for (let post of posts) {
+            // Fetch the comments associated with each post
+            socket.emit(SOCKET_EVENTS.FETCH_COMMENTS, { post_id: post.id });
+          }
         });
 
+        socket.on(SOCKET_EVENTS.COMMENTS_FETCHED, (fetchedComments) => {
+          setComments((prevComments) => [...prevComments, ...fetchedComments]);
+        });
         socket.on('postLiked', (data) => {
           const { postId, likeCount } = data;
         
@@ -221,11 +230,14 @@ function CatMap() {
           );
         });
 
+      
+
         axios.get('/api/loggedin')
           .then(response => {
               if (response.data.loggedIn) {
                   setName(response.data.name);
                   setUserId(response.data.userId);
+                  setUserProfilePic(`data:image/jpeg;base64,${response.data.image}`);
 
                   socket.emit('fetchUserLikes', { userId: response.data.userId });
               }
@@ -269,7 +281,6 @@ function CatMap() {
    
     const handleLikePost = (postId: number) => {
       socket.emit('likePost', { postId, userId });
-      // Update local storage
       const updatedUserLikes = userLikes.includes(postId)
         ? userLikes.filter((id) => id !== postId)
         : [...userLikes, postId];
@@ -278,7 +289,7 @@ function CatMap() {
 
     const handleCommentPost = (postId: number) => {
       const commentData = { ...commentFormData, post_id: postId, parent_comment_id: 0, user_id: userId };
-      socket.emit(SOCKET_EVENTS.CREATE_COMMENT, commentData);
+      socket.emit(SOCKET_EVENTS.CREATE_MAP_COMMENT, commentData);
 
       setCommentFormData({ content: '' });
   
@@ -322,7 +333,7 @@ function CatMap() {
                     </Box>
                     <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} />
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Avatar sx={{ mr: 2 }}></Avatar>
+                      <Avatar src={post.userProfilePic} sx={{ mr: 2 }}></Avatar>
                       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                         <Typography variant="h6">{post.name}</Typography>
                         <Typography variant="body2">{formatTimestamp(post.timestamp)}</Typography>
@@ -352,12 +363,21 @@ function CatMap() {
                     <IconButton
                       onMouseEnter={(event) => event.currentTarget.style.color = 'blue'}
                       onMouseLeave={(event) => event.currentTarget.style.color = ''}
-                      onClick={() => handleCommentPost(post.id)}
+                      
                     >
                     <CommentIcon />
                     </IconButton>
 
                     <Divider variant="middle" sx={{ marginTop: 2, width: '100%', margin: 0 }} />
+
+                    {comments
+                      .filter(({ post_id }) => post_id === post.id)
+                      .map(({ id, name, content }) => (
+                        <div key={id} className="single-comment">
+                          <p className="name">{name}</p>
+                          <p className="text">{content}</p>
+                        </div>
+                      ))}
 
                     <div style={{ position: 'sticky', bottom: 0, backgroundColor: 'white' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mt: 0, borderRadius: 2, p: 1 }}>
@@ -380,10 +400,9 @@ function CatMap() {
                               <InputAdornment position="end">
                                 <IconButton 
                                   onClick={() => {
-                                  // Handle comment submission here
+                                    handleCommentPost(post.id);
                                   }}
                                   disabled={!commentFormData.content}
-                                
                                 >
                                   <SendIcon color={commentFormData.content ? 'primary' : 'disabled'} /> 
                                 </IconButton>
@@ -443,7 +462,7 @@ function CatMap() {
                         </Box>
                         <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} />
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <Avatar sx={{ mr: 2 }}></Avatar>
+                        <Avatar src={userProfilePic ? userProfilePic : undefined} sx={{ mr: 2 }}></Avatar>
                             <Typography variant="h6">{name}</Typography>
                         </Box>
                         

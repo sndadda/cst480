@@ -40,7 +40,6 @@ let mapPostSchema = z.object({
     content: z.string(),
     timestamp: z.string(),
     likes: z.number(),
-    image: z.any(),
 });
 let cuteCatLikeSchema = z.object({
     post_id: z.number().gte(1),
@@ -50,6 +49,15 @@ let cuteCatCommentSchema = z.object({
     post_id: z.number().gte(1),
     username: z.string().min(3),
     comment: z.string(),
+});
+let mapPostCommentSchema = z.object({
+    id: z.number().gte(1),
+    post_id: z.number().gte(1),
+    parent_comment_id: z.number().gte(1),
+    user_id: z.number().gte(1),
+    content: z.string(),
+    timestamp: z.string(),
+    likes: z.number(),
 });
 let dummyUsers = [
     {
@@ -71,4 +79,4 @@ let dummyUsers = [
         image: null,
     },
 ];
-export { loginUserBodySchema, userBodySchema, dummyUsers, cuteCatPostSchema, cuteCatLikeSchema, mapPostSchema, markerSchema, cuteCatCommentSchema, };
+export { loginUserBodySchema, userBodySchema, dummyUsers, cuteCatPostSchema, cuteCatLikeSchema, mapPostSchema, markerSchema, cuteCatCommentSchema, mapPostCommentSchema, };

@@ -75,7 +75,7 @@ app.get("/api/loggedin", async (req, res) => {
     }
     let result;
     try {
-        result = await db.all("SELECT users.id, users.name FROM tokens JOIN users ON tokens.user_id = users.id WHERE token=?", [token]);
+        result = await db.all("SELECT users.id, users.name, users.image FROM tokens JOIN users ON tokens.user_id = users.id WHERE token=?", [token]);
     }
     catch (err) {
         let error = err;
@@ -86,7 +86,9 @@ app.get("/api/loggedin", async (req, res) => {
     }
     let userId = result[0].id;
     let name = result[0].name;
-    return res.json({ loggedIn: true, name, userId });
+    let image = result[0].image;
+    let imageBase64 = image ? image.toString('base64') : null;
+    return res.json({ loggedIn: true, name, userId, image: imageBase64 });
 });
 app.post("/api/create", async (req, res) => {
     let parseResult = utils.userBodySchema.safeParse(req.body);
@@ -359,17 +361,12 @@ io.on("connection", (socket) => {
             return;
         }
         try {
-<<<<<<< HEAD
             const now = new Date();
             const offset = -4.0;
             const localNow = new Date(now.getTime() + (3600000 * offset));
             const timestampl = localNow.toISOString().slice(0, 19).replace('T', ' ');
             result = await db.all("INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image) VALUES(?, ?, ?, ?, ?, ?) RETURNING id", [userId, marker_id, subject, content, timestampl, image]);
-            console.log('post saved');
-=======
-            result = await db.all("INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image) VALUES(?, ?, ?, ?, DATETIME('now'), ?) RETURNING id", [userId, marker_id, subject, content, image]);
             console.log("post saved");
->>>>>>> c8b70818ed2f8ba7b555ae6fb6308ae2f4afdf55
             if (!result || result.length === 0) {
                 socket.emit(SOCKET_EVENTS.MAP_ERROR, {
                     error: "Failed to create post",
@@ -378,7 +375,6 @@ io.on("connection", (socket) => {
             }
             mapPost = await db.all("SELECT posts.id, username, subject, content, image, timestamp FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?", [marker_id]);
             io.emit(SOCKET_EVENTS.MAP_UPDATE, mapPost);
-            // Fetch and log the newly created post
             const newPost = await db.all("SELECT * FROM posts WHERE id = ?", [
                 result[0].id,
             ]);
@@ -390,17 +386,18 @@ io.on("connection", (socket) => {
             socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
         }
     });
-    socket.on(SOCKET_EVENTS.FETCH_MAP_POSTS, async (data) => {
-        let { marker_id } = data;
+    socket.on(SOCKET_EVENTS.FETCH_MAP_POSTS, async ({ marker_id }) => {
         let posts;
         console.log("Fetching posts for marker_id:", marker_id);
         try {
-            posts = await db.all("SELECT posts.*, users.name FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?", [marker_id]);
+            posts = await db.all("SELECT posts.*, users.name, users.image as userProfilePic FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?", [marker_id]);
             console.log("Fetched posts:", posts);
-            // Convert the Buffer image data back to a base64 string
             posts.forEach((post) => {
                 if (post.image) {
                     post.image = `data:image/jpeg;base64,${post.image.toString("base64")}`;
+                }
+                if (post.userProfilePic) {
+                    post.userProfilePic = `data:image/jpeg;base64,${post.userProfilePic.toString("base64")}`;
                 }
             });
             socket.emit(SOCKET_EVENTS.MAP_POSTS_FETCHED, posts);
@@ -409,6 +406,52 @@ io.on("connection", (socket) => {
             let error = err;
             console.log(`Error fetching posts: ${error.toString()}`);
             socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
+        }
+    });
+    socket.on(SOCKET_EVENTS.UPLOAD_PROFILE_PICTURE, async (data) => {
+        let { image } = data;
+        let result;
+        if (!userId || !image) {
+            socket.emit(SOCKET_EVENTS.PROFILE_ERROR, { error: "Missing required data" });
+            return;
+        }
+        try {
+            const bufferImage = Buffer.from(image.split(",")[1], "base64");
+            result = await db.all("UPDATE users SET image = ? WHERE id = ? RETURNING id", [bufferImage, userId]);
+            console.log("Profile image updated");
+            if (!result || result.length === 0) {
+                socket.emit(SOCKET_EVENTS.PROFILE_ERROR, {
+                    error: "Failed to update profile image",
+                });
+                return;
+            }
+            const updatedUser = await db.all("SELECT * FROM users WHERE id = ?", [
+                userId,
+            ]);
+            console.log(updatedUser);
+            console.log("Updating profile image for user_id:", userId);
+        }
+        catch (err) {
+            let error = err;
+            socket.emit(SOCKET_EVENTS.PROFILE_ERROR, { error: error.toString() });
+        }
+    });
+    socket.on(SOCKET_EVENTS.FETCH_PROFILE_PICTURE, async (data) => {
+        let user;
+        console.log("Fetching profile for user_id:", userId);
+        try {
+            user = await db.all("SELECT * FROM users WHERE id = ?", [userId]);
+            console.log("Fetched profile:", user);
+            // Convert the Buffer image data back to a base64 string
+            if (user[0].avatar) {
+                user[0].avatar = `data:image/jpeg;base64,${user[0].avatar.toString("base64")}`;
+            }
+            socket.emit(SOCKET_EVENTS.PROFILE_PIC_FETCHED, user[0]);
+        }
+        catch (err) {
+            let error = err;
+            console.log(`Error fetching profile: ${error.toString()}`);
+            socket.emit(SOCKET_EVENTS.PROFILE_ERROR, { error: error.toString() });
         }
     });
     socket.on("likePost", async (data) => {
@@ -447,6 +490,28 @@ io.on("connection", (socket) => {
         socket.emit("userLikesFetched", {
             userLikes: userLikes.map((like) => like.post_id),
         });
+    });
+    socket.on(SOCKET_EVENTS.CREATE_MAP_COMMENT, async (data) => {
+        let { post_id, content, user_id } = data;
+        let mapPostComments = [];
+        try {
+            const now = new Date();
+            const offset = -4.0;
+            const localNow = new Date(now.getTime() + (3600000 * offset));
+            const timestampl = localNow.toISOString().slice(0, 19).replace('T', ' ');
+            const parent_comment_id = 1;
+            console.log('hi');
+            await db.all("INSERT INTO comments(post_id, parent_comment_id, user_id, content, timestamp, likes) VALUES(?, ?, ?, ?, ?, ?)", [post_id, parent_comment_id, user_id, content, timestampl, 1]);
+            mapPostComments = await db.all("SELECT comments.id, comments.post_id, comments.content, users.name as name FROM comments INNER JOIN users ON users.id = comments.user_id WHERE comments.post_id = ?", [post_id]);
+            console.log(mapPostComments);
+            io.emit(SOCKET_EVENTS.COMMENTS_FETCHED, mapPostComments);
+        }
+        catch (err) {
+            let error = err;
+            io.to(socket.id).emit(SOCKET_EVENTS.CUTE_CAT_ERROR, {
+                error: error.toString(),
+            });
+        }
     });
     /* Cute Cat Post Socket Events */
     socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {

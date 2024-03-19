@@ -7,7 +7,7 @@ import IconButton from '@mui/material/IconButton';
 import './Profile.css';
 
 function Profile() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [, setSelectedFile] = useState<File | null>(null);
   const [imageURL, setImageURL] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 

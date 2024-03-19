@@ -82,7 +82,7 @@ function CatMap() {
     const [markerPos, setMarkerPos] = useState({ latitude: 0, longitude: 0 });
     const [isPostsModalOpen, setIsPostsModalOpen] = useState(false);
     const [selectedPosts, setSelectedPosts] = useState<MapPost[]>([]);
-    let [posts, setPosts] = useState<MapPost[]>([]);
+    let [, setPosts] = useState<MapPost[]>([]);
     const [name, setName] = useState('');
     const [userId, setUserId] = useState(null);
     const [userLikes, setUserLikes] = useState<number[]>([]);
@@ -427,7 +427,7 @@ const renderMarkers = (markers: Marker[]) => {
 
                     {comments
                       .filter(({ post_id }) => post_id === post.id)
-                      .map(({ id, name, content, timestamp }, index) => (
+                      .map(({ name, content, timestamp }, index) => (
                         <div key={index}>
                           <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mb: 2 }}>
                             <Avatar src={post.userProfilePic} sx={{ mr: 2 }}></Avatar>
@@ -607,7 +607,7 @@ const renderMarkers = (markers: Marker[]) => {
                     color="primary"
                     aria-label="upload picture"
                     component="span"
-                    onClick={(e) => {
+                    onClick={() => {
                       if (fileInputRef.current) {
                         fileInputRef.current.click();
                       }

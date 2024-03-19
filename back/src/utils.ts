@@ -38,6 +38,7 @@ let markerSchema = z.object({
   id: z.number().gte(1),
   latitude: z.number(),
   longitude: z.number(),
+  timestamp: z.string(),
 });
 type Marker = z.infer<typeof markerSchema>;
 

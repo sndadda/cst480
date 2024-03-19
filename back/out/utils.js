@@ -31,6 +31,7 @@ let markerSchema = z.object({
     id: z.number().gte(1),
     latitude: z.number(),
     longitude: z.number(),
+    timestamp: z.string(),
 });
 let mapPostSchema = z.object({
     id: z.number().gte(1),

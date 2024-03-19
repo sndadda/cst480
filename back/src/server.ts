@@ -100,9 +100,13 @@ app.get("/api/loggedin", async (req, res) => {
   let userId = result[0].id;
   let name = result[0].name;
   let image = result[0].image;
-  let bufferImage = Buffer.from(image, 'binary');
-  let imageBase64 = image ? `data:image/jpeg;base64,${bufferImage.toString('base64')}` : null;
-
+  let bufferImage, imageBase64;
+  if (image) {
+    bufferImage = Buffer.from(image, 'binary');
+    imageBase64 = `data:image/jpeg;base64,${bufferImage.toString('base64')}`;
+  } else {
+    imageBase64 = null;
+  }
   return res.json({ loggedIn: true, name, userId, image: imageBase64 });
 });
 
@@ -443,20 +447,27 @@ io.on("connection", (socket) => {
     let result;
 
     try {
+      const now = new Date();
+      const offset = -4.0; 
+      const localNow = new Date(now.getTime() + (3600000 * offset));
+
+      const timestamp = localNow.toISOString().slice(0, 19).replace('T', ' ');
+
       result = await db.all(
-        "INSERT INTO markers(user_id, latitude, longitude) VALUES (?, ?, ?) RETURNING id",
-        [userId, latitude, longitude]
+        "INSERT INTO markers(user_id, latitude, longitude, timestamp) VALUES (?, ?, ?, ?) RETURNING id",
+        [userId, latitude, longitude, timestamp]
       );
 
       socket.emit(SOCKET_EVENTS.MARKER_CREATED, {
         id: result[0].id,
         latitude,
         longitude,
+        timestamp
       });
 
       let updatedMarkers: utils.Marker[];
       updatedMarkers = await db.all(
-        "SELECT markers.id, latitude, longitude FROM markers INNER JOIN users ON users.id = markers.user_id"
+        "SELECT markers.id, latitude, longitude, markers.timestamp FROM markers INNER JOIN users ON users.id = markers.user_id"
       );
       io.emit(SOCKET_EVENTS.MARKERS_FETCHED, updatedMarkers);
     } catch (err) {
@@ -468,7 +479,7 @@ io.on("connection", (socket) => {
   socket.on(SOCKET_EVENTS.FETCH_MARKERS, async () => {
     let result;
     try {
-        result = await db.all("SELECT markers.id, latitude, longitude FROM markers INNER JOIN users ON users.id = markers.user_id");
+        result = await db.all("SELECT markers.id, latitude, longitude, markers.timestamp FROM markers INNER JOIN users ON users.id = markers.user_id");
         socket.emit(SOCKET_EVENTS.MARKERS_FETCHED, result);
     }
     catch (err) {
@@ -478,7 +489,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on(SOCKET_EVENTS.CREATE_MAP_POST, async (data) => {
-    let { marker_id, subject, content, image } = data;
+    let { marker_id, subject, content, image, category } = data;
     let mapPost: utils.MapPost[] = [];
     let result;
     let base64Image = "";
@@ -498,8 +509,8 @@ io.on("connection", (socket) => {
       const timestampl = localNow.toISOString().slice(0, 19).replace('T', ' ');
 
       result = await db.all(
-        "INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image) VALUES(?, ?, ?, ?, ?, ?) RETURNING id",
-        [userId, marker_id, subject, content, timestampl, image]
+        "INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image, category) VALUES(?, ?, ?, ?, ?, ?, ?) RETURNING id",
+        [userId, marker_id, subject, content, timestampl, image, category]
       );
       console.log("post saved");
 
@@ -511,7 +522,7 @@ io.on("connection", (socket) => {
       }
 
       mapPost = await db.all(
-        "SELECT posts.id, username, subject, content, image, timestamp FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?",
+        "SELECT posts.id, username, subject, content, image, timestamp, category FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?",
         [marker_id]
       );
       io.emit(SOCKET_EVENTS.MAP_UPDATE, mapPost);
@@ -529,32 +540,32 @@ io.on("connection", (socket) => {
   });
 
   socket.on(SOCKET_EVENTS.FETCH_MAP_POSTS, async ({ marker_id }) => {
-  let posts;
-  console.log("Fetching posts for marker_id:", marker_id);
+    let posts;
+    console.log("Fetching posts for marker_id:", marker_id);
 
-  try {
-    posts = await db.all(
-      "SELECT posts.*, users.name, users.image as userProfilePic FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?",
-      [marker_id]
-    );
-    console.log("Fetched posts:", posts);
+    try {
+      posts = await db.all(
+        "SELECT posts.*, users.name, users.image as userProfilePic FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?",
+        [marker_id]
+      );
+      console.log("Fetched posts:", posts);
 
-    posts.forEach((post) => {
-      if (post.image) {
-        post.image = `data:image/jpeg;base64,${post.image.toString("base64")}`;
-      }
-      if (post.userProfilePic) {
-        post.userProfilePic = `data:image/jpeg;base64,${post.userProfilePic.toString("base64")}`;
-      }
-    });
+      posts.forEach((post) => {
+        if (post.image) {
+          post.image = `data:image/jpeg;base64,${post.image.toString("base64")}`;
+        }
+        if (post.userProfilePic) {
+          post.userProfilePic = `data:image/jpeg;base64,${post.userProfilePic.toString("base64")}`;
+        }
+      });
 
-    socket.emit(SOCKET_EVENTS.MAP_POSTS_FETCHED, posts);
-  } catch (err) {
-    let error = err as Object;
-    console.log(`Error fetching posts: ${error.toString()}`);
-    socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
-  }
-});
+      socket.emit(SOCKET_EVENTS.MAP_POSTS_FETCHED, posts);
+    } catch (err) {
+      let error = err as Object;
+      console.log(`Error fetching posts: ${error.toString()}`);
+      socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
+    }
+  });
   
 
   socket.on(SOCKET_EVENTS.UPLOAD_PROFILE_PICTURE, async (data) => {

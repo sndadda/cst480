@@ -87,8 +87,14 @@ app.get("/api/loggedin", async (req, res) => {
     let userId = result[0].id;
     let name = result[0].name;
     let image = result[0].image;
-    let bufferImage = Buffer.from(image, 'binary');
-    let imageBase64 = image ? `data:image/jpeg;base64,${bufferImage.toString('base64')}` : null;
+    let bufferImage, imageBase64;
+    if (image) {
+        bufferImage = Buffer.from(image, 'binary');
+        imageBase64 = `data:image/jpeg;base64,${bufferImage.toString('base64')}`;
+    }
+    else {
+        imageBase64 = null;
+    }
     return res.json({ loggedIn: true, name, userId, image: imageBase64 });
 });
 app.post("/api/create", async (req, res) => {
@@ -369,14 +375,19 @@ io.on("connection", (socket) => {
         let marker = [];
         let result;
         try {
-            result = await db.all("INSERT INTO markers(user_id, latitude, longitude) VALUES (?, ?, ?) RETURNING id", [userId, latitude, longitude]);
+            const now = new Date();
+            const offset = -4.0;
+            const localNow = new Date(now.getTime() + (3600000 * offset));
+            const timestamp = localNow.toISOString().slice(0, 19).replace('T', ' ');
+            result = await db.all("INSERT INTO markers(user_id, latitude, longitude, timestamp) VALUES (?, ?, ?, ?) RETURNING id", [userId, latitude, longitude, timestamp]);
             socket.emit(SOCKET_EVENTS.MARKER_CREATED, {
                 id: result[0].id,
                 latitude,
                 longitude,
+                timestamp
             });
             let updatedMarkers;
-            updatedMarkers = await db.all("SELECT markers.id, latitude, longitude FROM markers INNER JOIN users ON users.id = markers.user_id");
+            updatedMarkers = await db.all("SELECT markers.id, latitude, longitude, markers.timestamp FROM markers INNER JOIN users ON users.id = markers.user_id");
             io.emit(SOCKET_EVENTS.MARKERS_FETCHED, updatedMarkers);
         }
         catch (err) {
@@ -387,7 +398,7 @@ io.on("connection", (socket) => {
     socket.on(SOCKET_EVENTS.FETCH_MARKERS, async () => {
         let result;
         try {
-            result = await db.all("SELECT markers.id, latitude, longitude FROM markers INNER JOIN users ON users.id = markers.user_id");
+            result = await db.all("SELECT markers.id, latitude, longitude, markers.timestamp FROM markers INNER JOIN users ON users.id = markers.user_id");
             socket.emit(SOCKET_EVENTS.MARKERS_FETCHED, result);
         }
         catch (err) {
@@ -396,7 +407,7 @@ io.on("connection", (socket) => {
         }
     });
     socket.on(SOCKET_EVENTS.CREATE_MAP_POST, async (data) => {
-        let { marker_id, subject, content, image } = data;
+        let { marker_id, subject, content, image, category } = data;
         let mapPost = [];
         let result;
         let base64Image = "";
@@ -410,7 +421,7 @@ io.on("connection", (socket) => {
             const offset = -4.0;
             const localNow = new Date(now.getTime() + (3600000 * offset));
             const timestampl = localNow.toISOString().slice(0, 19).replace('T', ' ');
-            result = await db.all("INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image) VALUES(?, ?, ?, ?, ?, ?) RETURNING id", [userId, marker_id, subject, content, timestampl, image]);
+            result = await db.all("INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image, category) VALUES(?, ?, ?, ?, ?, ?, ?) RETURNING id", [userId, marker_id, subject, content, timestampl, image, category]);
             console.log("post saved");
             if (!result || result.length === 0) {
                 socket.emit(SOCKET_EVENTS.MAP_ERROR, {
@@ -418,7 +429,7 @@ io.on("connection", (socket) => {
                 });
                 return;
             }
-            mapPost = await db.all("SELECT posts.id, username, subject, content, image, timestamp FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?", [marker_id]);
+            mapPost = await db.all("SELECT posts.id, username, subject, content, image, timestamp, category FROM posts INNER JOIN users ON users.id = posts.user_id WHERE marker_id = ?", [marker_id]);
             io.emit(SOCKET_EVENTS.MAP_UPDATE, mapPost);
             const newPost = await db.all("SELECT * FROM posts WHERE id = ?", [
                 result[0].id,

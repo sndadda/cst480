@@ -72,6 +72,7 @@ interface Marker {
     id: number;
     latitude: number;
     longitude: number;
+    timestamp: string;
     mapboxMarker?: mapboxgl.Marker;
 }
 
@@ -86,6 +87,7 @@ interface MapPost {
     likes: number;
     image: string;
     userProfilePic: string;
+    category: string;
 }
 interface MapPostComment {
     id: number;

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import "mapbox-gl/dist/mapbox-gl.css";
 import { socket } from "../socket.tsx";
@@ -12,21 +12,20 @@ import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import OutlinedInput from '@mui/material/OutlinedInput';
-import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
-import { Marker, MapPost, getAxiosErrorMessages, MapPostComment } from './utils.ts';
+import { Marker, MapPost, MapPostComment } from './utils.ts';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import IconButton from '@mui/material/IconButton';
 import CommentIcon from '@mui/icons-material/Comment';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import SendIcon from '@mui/icons-material/Send';
 import InputAdornment from '@mui/material/InputAdornment';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardHeader from '@mui/material/CardHeader';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import PetsIcon from '@mui/icons-material/Pets';
+import Menu from '@mui/material/Menu';
+import Chip from '@mui/material/Chip';
 import axios from 'axios';
 import "./CatMap.css";
 
@@ -72,14 +71,14 @@ function CatMap() {
         content: '',
     });
     const [comments, setComments] = useState<MapPostComment[]>([]);
-    const [formData, setFormData] = useState<{subject: string, content: string, image: File | null}>({subject: '', content: '', image: null });
+    const [formData, setFormData] = useState<{subject: string, content: string, image: File | null, category: string}>({subject: '', content: '', image: null, category: '' });
     const mapContainer = useRef<HTMLDivElement | null>(null);
     const [markers, setMarkers] = useState<Marker[]>([]);
+    const [renderedMarkers, setRenderedMarkers] = useState<mapboxgl.Marker[]>([]);
     const [lastMarker, setLastMarker] = useState<mapboxgl.Marker | null>(null);
     const map = useRef<mapboxgl.Map | null>(null);
     const geolocate = useRef<mapboxgl.GeolocateControl | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
     const [markerPos, setMarkerPos] = useState({ latitude: 0, longitude: 0 });
     const [isPostsModalOpen, setIsPostsModalOpen] = useState(false);
     const [selectedPosts, setSelectedPosts] = useState<MapPost[]>([]);
@@ -90,6 +89,9 @@ function CatMap() {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [imageURL, setImageURL] = useState<string | null>(null);
     const [userProfilePic, setUserProfilePic] = useState<string | undefined>(undefined);
+    const [filter, setFilter] = useState('all');
+    const [category, setCategory] = useState('');
+    const [anchorEl, setAnchorEl] = React.useState(null);
 
     useEffect(() => {
         socket.connect();
@@ -122,19 +124,7 @@ function CatMap() {
 
           socket.on(SOCKET_EVENTS.MARKERS_FETCHED, (markers: Marker[]) => {
             setMarkers(markers);
-            markers.forEach((marker: Marker) => {
-              const mapboxMarker = new mapboxgl.Marker()
-                .setLngLat([marker.longitude, marker.latitude])
-                .addTo(map.current!);
-          
-              // Associate a click event with the marker
-              mapboxMarker.getElement().addEventListener('click', (event) => {
-                event.stopPropagation();
-                // Fetch the posts associated with the marker
-                socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
-                setIsPostsModalOpen(true);
-              });
-            });
+            renderMarkers(markers); 
           });
         });
 
@@ -166,7 +156,6 @@ function CatMap() {
 
           mapboxMarker.getElement().addEventListener('click', () => {
             socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
-
           });
         });
         
@@ -246,6 +235,53 @@ function CatMap() {
          
     }, []);
 
+    useEffect(() => {
+      if (map.current) {
+        renderMarkers(markers);
+      }
+    }, [markers, filter]);
+
+
+
+
+const renderMarkers = (markers: Marker[]) => {
+  // Remove all previously rendered markers from the map
+  renderedMarkers.forEach((marker) => marker.remove());
+
+  const newRenderedMarkers: mapboxgl.Marker[] = [];
+
+  markers.forEach((marker: Marker) => {
+    const postDate = new Date(marker.timestamp);
+    const currentDate = new Date();
+    const diffInMilliseconds = Math.abs(currentDate.getTime() - postDate.getTime());
+    const diffInDays = diffInMilliseconds / (1000 * 60 * 60 * 24);
+
+    if (filter === 'new' && diffInDays >= 2) {
+      return;
+    }
+
+    if (filter === 'old' && diffInDays < 2) {
+      return;
+    }
+
+    const color = getMarkerColor(marker.timestamp);
+    const mapboxMarker = new mapboxgl.Marker({ color })
+      .setLngLat([marker.longitude, marker.latitude])
+      .addTo(map.current!);
+
+    // Associate a click event with the marker
+    mapboxMarker.getElement().addEventListener('click', (event) => {
+      event.stopPropagation();
+      socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
+      setIsPostsModalOpen(true);
+    });
+
+    newRenderedMarkers.push(mapboxMarker);
+  });
+
+  // Save the newly rendered markers in the state
+  setRenderedMarkers(newRenderedMarkers);
+};
 
     const handlePostClick = () => {
       // convert the image to a base64 string
@@ -260,10 +296,10 @@ function CatMap() {
       }
 
       socket.once(SOCKET_EVENTS.MARKER_CREATED, (marker) => {
-        const postData = { ...formData, marker_id: marker.id };
+        const postData = { ...formData, marker_id: marker.id, category: category };
         socket.emit(SOCKET_EVENTS.CREATE_MAP_POST, postData);
         
-        setFormData({ subject: '', content: '', image: null });
+        setFormData({ subject: '', content: '', image: null, category: ''});
         setImageURL(null); 
       });
         
@@ -289,8 +325,29 @@ function CatMap() {
       setCommentFormData({ content: '' });
   
     };
+
+    const handleClick = (event: any) => {
+      setAnchorEl(event.currentTarget);
+    };
+    
+    const handleClose = () => {
+      setAnchorEl(null);
+    };
+
     return (
         <div ref={mapContainer} style={{ width: '96%', height: '100vh' }}>
+        <div className="map-select">
+          <Select
+            labelId="filter-label"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value)}
+              style={{ backgroundColor: 'white', opacity: 1 }}
+            >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="new">New</MenuItem>
+            <MenuItem value="old">Old</MenuItem>
+          </Select>
+        </div>
           <Modal
             open={isPostsModalOpen}
             onClose={() => setIsPostsModalOpen(false)}
@@ -331,7 +388,10 @@ function CatMap() {
                       <Avatar src={post.userProfilePic} sx={{ mr: 2 }}></Avatar>
                       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                         <Typography variant="h6">{post.name}</Typography>
-                        <Typography variant="body2">{formatTimestamp(post.timestamp)}</Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography variant="body2">{formatTimestamp(post.timestamp)}</Typography>
+                          <Chip label={post.category} variant="outlined" size="small" sx={{ marginLeft: 1 }} />
+                        </Box>
                       </Box>
                     </Box>
                 
@@ -433,7 +493,7 @@ function CatMap() {
                     setLastMarker(null);
                   }
                 
-                  setFormData({ subject: '', content: '', image: null });
+                  setFormData({ subject: '', content: '', image: null, category: ''});
                 }}
                 closeAfterTransition
                 BackdropProps={{
@@ -456,7 +516,7 @@ function CatMap() {
                                   lastMarker.remove();
                                   setLastMarker(null);
                               }
-                              setFormData({ subject: '', content: '', image: null });
+                              setFormData({ subject: '', content: '', image: null, category: ''});
                             
                           }}
                         >X</Button>
@@ -555,6 +615,27 @@ function CatMap() {
                   >
                     <PhotoCamera />
                   </IconButton>
+                  <IconButton
+                    color="primary"
+                    aria-label="select category"
+                    component="span"
+                    onClick={handleClick}
+                  >
+                    <PetsIcon />
+                  </IconButton>
+                  <Menu
+                    id="simple-menu"
+                    anchorEl={anchorEl}
+                    keepMounted
+                    open={Boolean(anchorEl)}
+                    onClose={handleClose}
+                  >
+                    <MenuItem onClick={() => { setCategory('URGENT'); handleClose(); }}>URGENT</MenuItem>
+                    <MenuItem onClick={() => { setCategory('TNR'); handleClose(); }}>TNR</MenuItem>
+                    <MenuItem onClick={() => { setCategory('Lost Pet'); handleClose(); }}>Lost Pet</MenuItem>
+                    <MenuItem onClick={() => { setCategory('Need advice'); handleClose(); }}>Need advice</MenuItem>
+                    <MenuItem onClick={() => { setCategory('Supplies'); handleClose(); }}>Supplies</MenuItem>
+                  </Menu>
                 </Box>
                 <input
                   type="file"

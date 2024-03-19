@@ -31,6 +31,7 @@ CREATE TABLE markers (
     user_id INTEGER,
     latitude FLOAT,
     longitude FLOAT,
+    timestamp TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -53,16 +54,9 @@ CREATE TABLE posts (
     timestamp TIMESTAMP,
     likes INT DEFAULT 0,
     image BLOB,
+    category VARCHAR(255),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (marker_id) REFERENCES markers(id)
-);
-
-CREATE TABLE post_categories (
-    id INTEGER PRIMARY KEY,
-    post_id INTEGER,
-    category_id INTEGER,
-    FOREIGN KEY (post_id) REFERENCES posts(id),
-    FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
 

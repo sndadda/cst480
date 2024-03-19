@@ -638,10 +638,17 @@ io.on("connection", (socket) => {
         likes,
         postId,
       ]);
-      await db.all(
-        "INSERT INTO cute_cat_likes(post_id, user_id) VALUES(?, ?)",
-        [postId, userId]
-      );
+      if (increment < 0) {
+        await db.all(
+          "DELETE FROM cute_cat_likes WHERE post_id=? AND user_id=?",
+          [postId, userId]
+        );
+      } else {
+        await db.all(
+          "INSERT INTO cute_cat_likes(post_id, user_id) VALUES(?, ?)",
+          [postId, userId]
+        );
+      }
       cuteCatLikes = await db.all(
         "SELECT post_id FROM cute_cat_likes WHERE user_id=?",
         [userId]

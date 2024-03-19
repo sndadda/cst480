@@ -4,6 +4,7 @@ const SOCKET_EVENTS = {
   LIKE_POST: "like_post",
   LIKE_COMMENT: "like_comment",
   UPDATE_FEED: "update_feed",
+  DISPLAY_FEED_POST_COMMENTS: "display_feed_post_comments",
   UPDATE_POST: "update_post",
   USER_CONNECTED: "user_connected",
   USER_DISCONNECTED: "user_disconnected",

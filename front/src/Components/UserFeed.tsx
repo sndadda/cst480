@@ -10,6 +10,7 @@ import Typography from '@mui/material/Typography';
 import Fade from '@mui/material/Fade';
 import Divider from '@mui/material/Divider';
 import './UserFeed.css';
+import CommentIcon from '@mui/icons-material/Comment';
 
 // import Card from '@mui/material/Card';
 // import CardContent from '@mui/material/CardContent';
@@ -25,6 +26,8 @@ import {Card,
         InputLabel, 
         OutlinedInput, 
         FormControl,
+        Select, 
+        MenuItem
     } from '@mui/material'
 
     
@@ -32,7 +35,7 @@ import {Card,
 
 const UserFeed = () => {
 
-    const defaultMarkerId = 1
+    const defaultMarkerId = 1;
 
     interface FeedContentItem {
         message: any[];
@@ -45,19 +48,19 @@ const UserFeed = () => {
         content: string | null;
         timestamp: string | null;
         likes: number | null;
-        image: Blob | null; 
+        image: File | string | null; 
         userLikes: any[] | null;
     }
-    // const initialFeedPost: FeedPost = {
-    //     id: null,
-    //     username: null,
-    //     subject: null,
-    //     content: null,
-    //     timestamp: null,
-    //     likes: null,
-    //     image: null,
-    //     userLikes: null
-    // };
+    const initialFeedPost: FeedPost = {
+        id: null,
+        username: null,
+        subject: null,
+        content: null,
+        timestamp: null,
+        likes: null,
+        image: null,
+        userLikes: null
+    };
     
 
     type Comment = {
@@ -72,8 +75,15 @@ const UserFeed = () => {
         content: null,
     };
     
-    const [data, setData] = useState({
-        user_id: '',
+    interface PostData {
+        marker_id: number | null;
+        subject: string | null;
+        content: string | null;
+        image: any; 
+        
+    }
+    const [data, setData] = useState<PostData>({
+        //user_id: '',
         marker_id: defaultMarkerId,
         subject: '',
         content: '',
@@ -90,6 +100,15 @@ const UserFeed = () => {
     const [likedPosts, setLikedPosts] = useState<number[]>([]);
 
     const [postComments, setPostComments] = useState<any[]>([]);
+    const [updateLikeIcon, setUpdateLikeIcon] = useState<number>(0);
+    const [forceRerender, setForceRerender] = useState(false);
+    const [isLikedModalforPost, setIsLikedModalforPost] = useState<boolean>(false);
+
+
+    const [postIdForModal, setpostIdForModal] = useState<number | null >(null);
+    const [showCommentField, setShowCommentField] = useState<boolean>(false);
+    const [replyTo, setReplyTo] = useState<{username: string; user_id: number, comment_id: number}>({username: "", user_id: -1, comment_id: -1});
+    
    
 
     
@@ -99,25 +118,74 @@ const UserFeed = () => {
         console.log("connected");
 
         //Get the posts to display upon load the feed page.
-        socket.emit(SOCKET_EVENTS.UPDATE_FEED)
+        socket.emit(SOCKET_EVENTS.UPDATE_FEED);
+        socket.emit(SOCKET_EVENTS.DISPLAY_FEED_POST_COMMENTS);
 
-        socket.on(SOCKET_EVENTS.UPDATE_FEED, data => {
-            console.log(data);
+        socket.on(SOCKET_EVENTS.UPDATE_FEED, (data : FeedContentItem)=> {
+            //console.log("data", data);
             setFeedContent(data);
+            // console.log(typeof postIdForModal);
+            // if (typeof postIdForModal === 'number') {
+            //     if (selectedPost && feedContent) {
+            //         let updatedPost = feedContent?.message.find(post => post.id === postIdForModal);
+            //         console.log(updatedPost);
+            //         setSelectedPost({...updatedPost, userLikes: feedContent.userLikes})
+            //         setDisplaySpecificPost(true);
+            //         console.log('hi there');
+            //     }
+                
+                
+            // }
+            
+            // if (typeof selectedPost?.id === 'number') {
+            //     // console.log('whyyyy');
+
+            //     if (selectedPost && feedContent) {
+            //         let updatedPost = feedContent?.message.find(post => post.id === selectedPost.id);
+            //         //console.log(updatedPost);
+            //         setSelectedPost({...updatedPost, userLikes: feedContent.userLikes})
+            //         //setDisplaySpecificPost(true);
+            //         console.log('hi there');
+            //         console.log("inside the if-condition",selectedPost);
+            //     }
+                
+                
+            // }
+            console.log("feedcontent", feedContent);
+            if (selectedPost && data) {
+                // console.log('whyyyy');
+                // console.log("what is the selecetedPost id I have right now: ", selectedPost.id);
+                let updatedPost = data?.message.find(post => post.id === selectedPost.id);
+                //console.log(updatedPost);
+                //setSelectedPost({...updatedPost, userLikes: feedContent.userLikes})
+                setSelectedPost({...updatedPost, userLikes: data.userLikes})
+                //setDisplaySpecificPost(true);
+                // console.log('hi there');
+                // console.log("inside the if-condition",selectedPost);
+                
+                
+            }
+
             setLikedPosts(data.userLikes);
-            console.log(data.userLikes);
+            //console.log(data.userLikes);
+
+            
+            setUpdateLikeIcon(1);
 
             // console.log(feedContent?.userLikes);
         });
 
+        //update the comments for the current selected post.
         socket.on(SOCKET_EVENTS.UPDATE_POST, data => {
-            console.log("update_post", data);
-
+            //console.log("update_post", data);
+            console.log("update_comments", data);
             setPostComments(data.message);
+            
         });
 
         return () => {
             socket.off(SOCKET_EVENTS.UPDATE_FEED);
+            socket.off(SOCKET_EVENTS.UPDATE_POST);
             socket.disconnect();
             console.log("disconnected");
         };
@@ -138,13 +206,21 @@ const UserFeed = () => {
     const handleChange = (e: any) => {
         const { name, value } = e.target;
 
-        console.log(`name: ${name} and value: ${value}`)
+        //console.log(`name: ${name} and value: ${value}`)
         setData(prevData => ({
             ...prevData,
             [name]: value
         }));
     }; 
-
+    function arrayBufferToBase64(buffer:any) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    }
     // const handleCommentChange = (e: any) => {
     //     const { name, value } = e.target;
         
@@ -173,7 +249,7 @@ const UserFeed = () => {
                 onClose={() => {
                     setShowPostForm(false);
                     setData({
-                        user_id: '',
+                        //user_id: '',
                         marker_id: defaultMarkerId ,
                         subject: '',
                         content: '',
@@ -203,7 +279,7 @@ const UserFeed = () => {
                             onClick={() => {
                                 setShowPostForm(false);
                                 setData({
-                                    user_id: '',
+                                    //user_id: '',
                                     marker_id: defaultMarkerId,
                                     subject: '',
                                     content: '',
@@ -302,11 +378,14 @@ const UserFeed = () => {
                             }}
                         />
 
-                        
+
+                        <input type="file" onChange={(e) => {
+                            setData({ ...data, image: e.target.files && e.target.files.length > 0 ? e.target.files[0] : null })
+                        }} />
                         <Button 
                             variant="contained" 
                             onClick={handleSubmit}
-                            disabled={!data.content.trim()}
+                            disabled={!data.content?.trim()}
                             sx={{ 
                                 display: 'block', 
                                 width: '100%', 
@@ -321,6 +400,7 @@ const UserFeed = () => {
                         >
                             Post
                         </Button>
+                        
                     </Box>
                 </Fade>
             </Modal>
@@ -330,29 +410,77 @@ const UserFeed = () => {
             {feedContent && feedContent.message.map((post, index) => (
                     <Card 
                         key={index} 
-                        onClick={() => {
-                            setSelectedPost({...post,userLikes: feedContent.userLikes});
-                            setDisplaySpecificPost(true);
-                        }}
+                        // onClick={() => {
+                        //     setSelectedPost({...post,userLikes: feedContent.userLikes});
+                        //     setDisplaySpecificPost(true);
+                        // }}
                     >
-
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: 16 }}>
+                        <div>
+                           
+                        </div>
+                        {/* Expand button */}
+                        <Button
+                            variant="outlined"
+                            onClick={() => {
+                                // Handle expand button click
+                                //setSelectedPost({...post, userLikes: feedContent.userLikes, image: arrayBufferToBase64(post.image)});
+                                socket.emit(SOCKET_EVENTS.DISPLAY_FEED_POST_COMMENTS, selectedPost?.id);
+                                setSelectedPost({...post, userLikes: feedContent.userLikes});
+                                setDisplaySpecificPost(true);
+                                setIsLikedModalforPost(selectedPost?.userLikes?.some(like => like.post_id === selectedPost?.id) ? true : false);
+                                //setpostIdForModal(post.id);
+                                
+                            }}
+                        >
+                            Expand
+                        </Button>
+                    </div>
                         {/**new changes */}
                     <CardContent>
+                        {/* <Button
+                            variant="outlined"
+                            style={{ position: 'relative', top: 10, right: 10 }}
+                            onClick={() => {
+                                // Handle expand button click
+                                setSelectedPost({...post, userLikes: feedContent.userLikes});
+                                setDisplaySpecificPost(true);
+                            }}
+                            >
+                                Expand
+                        </Button> */}
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-                        <Avatar>{/* Avatar component goes here */}</Avatar>
-                        <Typography variant="subtitle1">{post.username}</Typography>
+                            <Avatar>{/* Avatar component goes here */}</Avatar>
+                            <Typography variant="subtitle1">{post.username}</Typography>
                         </div>
                         <Typography variant="subtitle1">Subject: {post.subject}</Typography>
                         <Divider />
                         <Typography variant="body1">Post: {post.content}</Typography>
+                        <Divider />
+                        
+                        {post.image && (
+                            <div>
+                                <img
+
+                                    src={post.image}
+                                    //src={typeof post.image === 'string' ? `data:image/jpeg;base64,${post.image}` : `data:image/jpeg;base64,${arrayBufferToBase64(post.image)}`}
+                                    style={{ width: '100px', height: '100px' }}
+                                    alt="Post Image"
+                                />
+
+
+                                <p>{post.image ? `${typeof post.image}`: `${typeof post.image}`}</p>
+                            </div>
+                        )}
                         <Divider />
                         <Typography variant="subtitle1">Likes {post.likes}</Typography>
                         
                         
                         <div onClick={() => 
                             {
-                                //console.log(post.id);
+                                console.log(post.id);
                                 socket.emit(SOCKET_EVENTS.LIKE_POST, post.id);
+                                
                                 
                             
                             }}
@@ -373,6 +501,8 @@ const UserFeed = () => {
                     </CardContent>
                     </Card>
                 ))}
+
+
                 {/* Modal 2 - Modal for individual posts*/}
                 <Modal
                     open={displaySpecificPost}
@@ -380,6 +510,9 @@ const UserFeed = () => {
                         //setSelectedPost();
                         setCommentData(initialCommentData);
                         setDisplaySpecificPost(false);
+                        setpostIdForModal(null);
+                        setShowCommentField(false);
+                        //setSelectedPost()
                     }}
                     closeAfterTransition
                     BackdropProps={{
@@ -392,7 +525,26 @@ const UserFeed = () => {
                             if (input) input.focus();
                         }, 0);
                     }}>
-                        <Box sx={{ position: 'relative', width: '50%', bgcolor: 'background.paper', p: 2, mx: 'auto', my: '10%', borderRadius: 2 }}>
+                        {/* <Box sx={{ position: 'relative', width: '50%', bgcolor: 'background.paper', p: 2, mx: 'auto', my: '10%', borderRadius: 2 }}> */}
+                            
+                            {/* Exit button */}
+
+                            
+                            <Box
+                                sx={{
+                                    position: 'relative',
+                                    width: '50%',
+                                    bgcolor: 'background.paper',
+                                    p: 2,
+                                    mx: 'auto',
+                                    my: '10%',
+                                    borderRadius: 2,
+                                    overflowY: 'scroll', // Enable vertical scrolling
+                                    maxHeight: '80vh', // Limit maximum height to 80% of viewport height
+                                }}
+                            >
+                                {/* Your modal content */}
+                                {/* Include all the content you have in the modal here */}
                             <Button 
                                 sx={{ 
                                     position: 'absolute', 
@@ -403,6 +555,7 @@ const UserFeed = () => {
                                 }} 
                                 onClick={() => {
                                     setDisplaySpecificPost(false);
+                                    setShowCommentField(false);
                                 }}
                             > X
                             </Button>
@@ -421,11 +574,70 @@ const UserFeed = () => {
                                 {selectedPost && selectedPost.content} {/* Display post content */}
                             </Typography>
                             <Divider />
+                            {selectedPost?.image && (
+                                <div>
+                                    <img
+                                    
+                                        //src={typeof post.image === 'string' ? `data:image/jpeg;base64,${post.image}` : `${post.image}`}
+                                        // src={typeof selectedPost.image === 'string' ? 
+                                        //     `data:image/jpeg;base64,${selectedPost.image}` : 
+                                        //     `data:image/jpeg;base64,${arrayBufferToBase64(selectedPost.image)}`
+                                        // }
+                                        // src={selectedPost.image}
+                                        src={typeof selectedPost.image === 'string' ? 
+                                            selectedPost.image : 
+                                            URL.createObjectURL(selectedPost.image)
+                                        }
+                                        style={{ width: '100px', height: '100px' }}
+                                        alt="Post Image"
+                                    />
+
+
+                                    
+                                </div>
+                            )}
+
+                            <Divider />
                             <Typography variant="subtitle1">Likes {selectedPost && selectedPost.likes}</Typography>
                             <div onClick={() => 
                                 {
-                                    //console.log(post.id);
+                                    console.log("selectedPost id", selectedPost?.id);
                                     socket.emit(SOCKET_EVENTS.LIKE_POST, selectedPost?.id);
+
+                                    setIsLikedModalforPost(!isLikedModalforPost);
+                                    
+                                    // if (selectedPost && feedContent){
+
+                                    //     setSelectedPost({...selectedPost, userLikes: feedContent.userLikes });
+                                    //     // let updatedSelectedPost = feedContent?.message.find(post => post.post_id === selectedPost?.id);
+                                    //     // setSelectedPost({...updatedSelectedPost, userLikes: feedContent.userLikes })
+
+                                    //     {selectedPost?.userLikes?.some(like => like.post_id === selectedPost?.id) ? (
+                                    //         <FavoriteIcon id={`post-${selectedPost?.id}-heart-icon`} style={{ color: 'red' }} />
+                                    //     ) : (
+                                    //         <FavoriteBorderIcon id={`post-${selectedPost?.id}-heart-icon`} />
+                                    //     )}
+                                    // }                                    
+                                  
+                                    // {selectedPost?.userLikes?.some(like => like.post_id === selectedPost?.id) ? (
+                                    //     <FavoriteBorderIcon id={`post-${selectedPost?.id}-heart-icon`} />
+                                        
+                                    // ) : (
+                                    //     <FavoriteIcon id={`post-${selectedPost?.id}-heart-icon`} style={{ color: 'red' }} />
+                                    // )}
+                                    
+                                    if (selectedPost) {
+                                        setpostIdForModal(selectedPost?.id);
+                                    }
+                                    //setDisplaySpecificPost(false);
+                                    
+                                    
+                                    // socket.on(SOCKET_EVENTS.UPDATE_FEED, data => {
+                                        
+                                    //     setSelectedPost({...post, userLikes: feedContent.userLikes});
+                                    //     setDisplaySpecificPost(true);
+                                
+                                    // });
                                     
                                 
                                 }}
@@ -435,63 +647,127 @@ const UserFeed = () => {
                                 ) : (
                                     <FavoriteBorderIcon id={`post-${selectedPost?.id}-heart-icon`} />
                                 )}
+
+                                {/* {
+                                    isLikedModalforPost ? 
+                                    <FavoriteIcon id={`post-${selectedPost?.id}-heart-icon`} style={{ color: 'red' }} /> : 
+                                    <FavoriteBorderIcon id={`post-${selectedPost?.id}-heart-icon`} />
+                                } */}
                                 
                             </div>
                            
                             {/*Comment box for post */}
-                            <TextField
-                                id="modal-post-comment"
-                                label="Write a comment"
-                                name="modal-post-comment"
-                                variant="outlined"
-                                fullWidth
-                                multiline
-                                rows={4}
-                                margin="normal"
-                                value={commentData.content || ''}
-                                onChange={(e) => {
-                                    setCommentData({
-                                        ...commentData,
-                                        content: e.target.value
-                                    });
-                                }}
-                            />
                             
+                            {showCommentField && 
+                            <>
+                                <p>Reply to @{replyTo.username}</p>
+                                <TextField
+                                    id="modal-post-comment"
+                                    label="Write a comment"
+                                    name="modal-post-comment"
+                                    variant="outlined"
+                                    fullWidth
+                                    multiline
+                                    rows={4}
+                                    margin="normal"
+                                    value={commentData.content || ''}
+                                    onChange={(e) => {
+                                        setCommentData({
+                                            ...commentData,
+                                            content: e.target.value
+                                        });
+                                    }}
+                                />
+                                
+                                <Button 
+                                    variant="contained" 
+                                    onClick={() => {
+                                        setCommentData({
+                                            ...commentData,
+                                            post_id: selectedPost ? selectedPost.id : null,
+                                            parent_comment_id: replyTo.comment_id,
+
+                                        });
+                                        console.log("commentData to be sent", commentData);
+                                        socket.emit(SOCKET_EVENTS.CREATE_COMMENT, commentData);
+                                    }}
+                                    disabled={!commentData.content || !commentData.content.trim()}
+                                    sx={{ 
+                                    display: 'block', 
+                                    width: '100%', 
+                                    mx: 'auto',
+                                    color: commentData.content ? 'white' : '#BCC0C4',
+                                    backgroundColor: commentData.content ? '#0861' : '#E5E6EB',
+                                    '&:hover': {
+                                        backgroundColor: commentData.content ? '#0861F2' : '#E5E6EB',
+                                    },
+                                    }}
+                                >
+                                    Post
+                                </Button>
+                            </>
+                            }   
 
                             {/* Display comments */}
-                            {postComments && postComments.map((comment, index) => (
+                            {/* {postComments && postComments.map((comment, index) => (
                                 <div key={index}>
                                     <Typography variant="body1">User: {comment.user_id}</Typography>
                                     <Typography variant="body1">Content: {comment.content}</Typography>
                                     <Typography variant="body1">Timestamp: {comment.timestamp}</Typography>
+                                    <Divider />
                                 </div>
-                            ))}
-                            <Button 
-                                variant="contained" 
-                                onClick={() => {
-                                    setCommentData({
-                                        ...commentData,
-                                        post_id: selectedPost ? selectedPost.id : null,
-                                    });
-                                    socket.emit(SOCKET_EVENTS.CREATE_COMMENT, commentData);
-                                }}
-                                disabled={!commentData.content || !commentData.content.trim()}
-                                sx={{ 
-                                display: 'block', 
-                                width: '100%', 
-                                mx: 'auto',
-                                color: commentData.content ? 'white' : '#BCC0C4',
-                                backgroundColor: commentData.content ? '#0861' : '#E5E6EB',
-                                '&:hover': {
-                                    backgroundColor: commentData.content ? '#0861F2' : '#E5E6EB',
-                                },
-                                }}
-                            >
-                                Post
-                            </Button>
+                                
+                            ))} */}
+                            
+                            
+
+                            {selectedPost && postComments
+                                .filter(comment => comment.post_id === selectedPost.id) // Filter comments by post_id
+                                .filter(comment => !comment.parent_comment_id) // Filter only parent comments
+                                .map((parentComment, parentIndex) => (
+                                    <div key={parentIndex}>
+                                        {/* Display parent comment */}
+                                        <Typography variant="body1">User: {parentComment.username}</Typography>
+                                        <Typography variant="body1">Content: {parentComment.content}</Typography>
+                                        <Typography variant="body1">Timestamp: {parentComment.timestamp}</Typography>
+                                        <CommentIcon 
+                                            onClick={() => {
+                                                setShowCommentField(!showCommentField);
+                                                setReplyTo({username: parentComment.username, user_id: parentComment.user_id, comment_id: parentComment.id});
+                                            }}
+                                        />
+                                        <Divider />
+                                        {/* Display child comments */}
+                                        {postComments
+                                            .filter(comment => comment.parent_comment_id === parentComment.id) // Filter child comments for this parent
+                                            .map((childComment, childIndex) => (
+                                                <div key={childIndex} style={{ marginLeft: 50 }}>
+                                                    {/* Display child comment */}
+                                                    <Typography variant="body1">User: {childComment.username}</Typography>
+                                                    <Typography variant="body1">Content: {childComment.content}</Typography>
+                                                    <Typography variant="body1">Timestamp: {childComment.timestamp}</Typography>
+                                                    <CommentIcon 
+                                                        onClick={() => {
+                                                            setShowCommentField(!showCommentField);
+                                                            setReplyTo({username: childComment.username, user_id: childComment.user_id, comment_id: childComment.id});
+                                                        }}
+                                                    />
+                                                    <Divider />
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+                                ))
+                            }
+
+                            
+                        
+
                             
                             
                         </Box>
+                        {/* </Box> */}
+                        
                     </Fade>
                 </Modal>
                     

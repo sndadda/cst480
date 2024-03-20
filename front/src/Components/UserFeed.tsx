@@ -1009,7 +1009,7 @@ const UserFeed = () => {
                                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                                             <Avatar sx={{ mr: 2 }} style={{marginTop: '10px'}}></Avatar>
                                             <Typography variant="h6">{comment.username}</Typography>
-                                            <Typography variant="body1" style={{paddingLeft: '10px'}}>Posted {formatTimestamp(comment.timestamp)} ago</Typography>
+                                            <Typography variant="body1" style={{paddingLeft: '10px'}}>Posted {(comment.timestamp)} ago</Typography>
                                         </Box>
                                         
                                     

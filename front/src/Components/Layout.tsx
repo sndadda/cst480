@@ -1,10 +1,10 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { getAxiosErrorMessages, getServerErrorMessages } from "./utils";
-import Avatar from '@mui/material/Avatar';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
+import Avatar from "@mui/material/Avatar";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import "./Layout.css";
 import Login from "./Login";
 
@@ -33,8 +33,15 @@ function Header({ setRefresh, name, setName, profilePic, setProfilePic }: any) {
                 <Link to="/feed">Feed</Link>
                 <Link to="/cuteCatFeed">Cute Cats</Link>
             </div>
-            <div className="profile-section" style={{ display: 'flex', alignItems: 'center' }}>
-                {name && <span style={{ color: 'black', marginRight: '10px' }}>Welcome, {name}</span>}
+            <div
+                className="profile-section"
+                style={{ display: "flex", alignItems: "center" }}
+            >
+                {name && (
+                    <span style={{ color: "black", marginRight: "10px" }}>
+                        Welcome, {name}
+                    </span>
+                )}
                 <Avatar
                     src={profilePic}
                     onClick={(event) => setAnchorEl(event.currentTarget)}
@@ -44,8 +51,10 @@ function Header({ setRefresh, name, setName, profilePic, setProfilePic }: any) {
                     open={Boolean(anchorEl)}
                     onClose={() => setAnchorEl(null)}
                 >
-                <MenuItem onClick={() => navigate('/profile')}>Settings</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                    <MenuItem onClick={() => navigate("/profile")}>
+                        Settings
+                    </MenuItem>
+                    <MenuItem onClick={handleLogout}>Logout</MenuItem>
                 </Menu>
             </div>
         </>
@@ -63,7 +72,11 @@ function Layout() {
             try {
                 let {
                     data: { loggedIn, name, image },
-                } = await axios.get<{ loggedIn: boolean, name: string, image: string }>("/api/loggedin");
+                } = await axios.get<{
+                    loggedIn: boolean;
+                    name: string;
+                    image: string;
+                }>("/api/loggedin");
                 setLoggedInStatus(loggedIn);
                 setName(name);
                 setProfilePic(image);
@@ -76,7 +89,13 @@ function Layout() {
     let layoutPage = (
         <>
             <nav>
-                <Header setRefresh={setRefresh} name={name} setName={setName} profilePic={profilePic} setProfilePic={setProfilePic} />
+                <Header
+                    setRefresh={setRefresh}
+                    name={name}
+                    setName={setName}
+                    profilePic={profilePic}
+                    setProfilePic={setProfilePic}
+                />
             </nav>
             <main>
                 <Outlet />

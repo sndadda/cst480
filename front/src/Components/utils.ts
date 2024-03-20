@@ -114,10 +114,6 @@ interface CuteCatCommentSubmit {
     comment: string;
 }
 
-interface PostLike {
-    post_id: number;
-}
-
 export { getServerErrorMessages, getAxiosErrorMessages };
 export type {
     CuteCatLike,

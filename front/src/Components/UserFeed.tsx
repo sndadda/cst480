@@ -21,12 +21,12 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import {Card, 
         CardContent, 
         TextField, 
-        Collapse, 
-        List, 
-        ListItem, 
-        ListItemText, 
+        //Collapse, 
+        //List, 
+        //ListItem, 
+        //ListItemText, 
         InputLabel, 
-        OutlinedInput, 
+        //OutlinedInput, 
         FormControl,
         Select, 
         MenuItem,
@@ -55,17 +55,17 @@ const UserFeed = () => {
         image: File | string | null; 
         userLikes: any[] | null;
     }
-    const initialFeedPost: FeedPost = {
-        id: null,
-        username: null,
-        subject: null,
-        content: null,
-        timestamp: null,
-        category: null,
-        likes: null,
-        image: null,
-        userLikes: null
-    };
+    // const initialFeedPost: FeedPost = {
+    //     id: null,
+    //     username: null,
+    //     subject: null,
+    //     content: null,
+    //     timestamp: null,
+    //     category: null,
+    //     likes: null,
+    //     image: null,
+    //     userLikes: null
+    // };
     
 
     type Comment = {
@@ -108,7 +108,7 @@ const UserFeed = () => {
 
     const [postComments, setPostComments] = useState<any[]>([]);
     const [updateLikeIcon, setUpdateLikeIcon] = useState<number>(0);
-    const [forceRerender, setForceRerender] = useState(false);
+    // const [forceRerender, setForceRerender] = useState(false);
     const [isLikedModalforPost, setIsLikedModalforPost] = useState<boolean>(false);
 
 
@@ -141,19 +141,24 @@ const UserFeed = () => {
         }
     };
 
-    const filterPostsByCategory = () => {
-        if (feedContent && selectedOption) {
-            const filteredPosts = feedContent.message.filter(post => selectedOption.includes(post.category));
-            setSortedPosts(filteredPosts);
+    // const filterPostsByCategory = () => {
+    //     if (feedContent && selectedOption) {
+    //         const filteredPosts = feedContent.message.filter(post => selectedOption.includes(post.category));
+    //         setSortedPosts(filteredPosts);
             
 
-        }
-    };
+    //     }
+    // };
     
 
     useEffect(() => {
         socket.connect();
         console.log("connected");
+        console.log(likedPosts);
+        console.log(updateLikeIcon);
+        console.log(postIdForModal);
+        setShowCommentField(true);
+        console.log(replyTo);
 
         //Get the posts to display upon load the feed page.
         socket.emit(SOCKET_EVENTS.UPDATE_FEED);
@@ -259,10 +264,10 @@ const UserFeed = () => {
         
     };
 
-    const handleCommentSubmit = (e: any) => {
-        e.preventDefault();
-        socket.emit(SOCKET_EVENTS.CREATE_COMMENT, commentData);
-    };
+    // const handleCommentSubmit = (e: any) => {
+    //     e.preventDefault();
+    //     socket.emit(SOCKET_EVENTS.CREATE_COMMENT, commentData);
+    // };
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
@@ -294,15 +299,15 @@ const UserFeed = () => {
    
 
 
-    function arrayBufferToBase64(buffer:any) {
-        let binary = '';
-        const bytes = new Uint8Array(buffer);
-        const len = bytes.byteLength;
-        for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
-    }
+    // function arrayBufferToBase64(buffer:any) {
+    //     let binary = '';
+    //     const bytes = new Uint8Array(buffer);
+    //     const len = bytes.byteLength;
+    //     for (let i = 0; i < len; i++) {
+    //         binary += String.fromCharCode(bytes[i]);
+    //     }
+    //     return btoa(binary);
+    // }
 
     function formatTimestamp(timestamp: string) {
         const postDate = new Date(timestamp);

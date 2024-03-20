@@ -577,7 +577,7 @@ io.on("connection", (socket) => {
             const parent_comment_id = 1;
             console.log('hi');
             await db.all("INSERT INTO comments(post_id, parent_comment_id, user_id, content, timestamp, likes) VALUES(?, ?, ?, ?, ?, ?)", [post_id, parent_comment_id, user_id, content, timestampl, 1]);
-            mapPostComments = await db.all("SELECT comments.id, comments.post_id, comments.content, users.name as name FROM comments INNER JOIN users ON users.id = comments.user_id WHERE comments.post_id = ?", [post_id]);
+            mapPostComments = await db.all("SELECT comments.id, comments.post_id, comments.content, comments.timestamp, users.name as name FROM comments INNER JOIN users ON users.id = comments.user_id WHERE comments.post_id = ?", [post_id]);
             console.log(mapPostComments);
             io.emit(SOCKET_EVENTS.COMMENTS_FETCHED, mapPostComments);
         }
@@ -601,6 +601,17 @@ io.on("connection", (socket) => {
             console.log(`Error fetching comments: ${error.toString()}`);
             socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
         }
+    });
+    socket.on('DELETE_POST', async ({ postId }) => {
+        const marker = await db.get("SELECT marker_id FROM posts WHERE id = ?", [postId]);
+        await db.run("DELETE FROM comments WHERE post_id = ?", [postId]);
+        await db.run("DELETE FROM posts WHERE id = ?", [postId]);
+        const posts = await db.all("SELECT * FROM posts WHERE marker_id = ?", [marker.marker_id]);
+        if (posts.length === 0) {
+            await db.run("DELETE FROM markers WHERE id = ?", [marker.marker_id]);
+            io.emit('MARKER_DELETED', { markerId: marker.marker_id });
+        }
+        io.emit('POST_DELETED', { postId });
     });
     /* Cute Cat Post Socket Events */
     socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {

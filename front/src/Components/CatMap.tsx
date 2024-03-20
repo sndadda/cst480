@@ -269,7 +269,7 @@ const renderMarkers = (markers: Marker[]) => {
       .setLngLat([marker.longitude, marker.latitude])
       .addTo(map.current!);
 
-    // Associate a click event with the marker
+
     mapboxMarker.getElement().addEventListener('click', (event) => {
       event.stopPropagation();
       socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
@@ -279,7 +279,6 @@ const renderMarkers = (markers: Marker[]) => {
     newRenderedMarkers.push(mapboxMarker);
   });
 
-  // Save the newly rendered markers in the state
   setRenderedMarkers(newRenderedMarkers);
 };
 
@@ -333,6 +332,7 @@ const renderMarkers = (markers: Marker[]) => {
     const handleClose = () => {
       setAnchorEl(null);
     };
+ 
 
     return (
         <div ref={mapContainer} style={{ width: '96%', height: '100vh' }}>
@@ -393,6 +393,7 @@ const renderMarkers = (markers: Marker[]) => {
                           <Chip label={post.category} variant="outlined" size="small" sx={{ marginLeft: 1 }} />
                         </Box>
                       </Box>
+                  
                     </Box>
                 
                     <p style={{ marginBottom: '20px' }}>{post.content}</p>

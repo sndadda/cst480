@@ -759,6 +759,7 @@ io.on("connection", (socket) => {
       socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
     }
   });
+ 
 
   /* Cute Cat Post Socket Events */
   socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {

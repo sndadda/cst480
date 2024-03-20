@@ -1,6 +1,5 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App.tsx";
 import CatMap from "./Components/CatMap.tsx";
 import Layout from "./Components/Layout.tsx";
 import NotFound from "./Components/NotFound.tsx";

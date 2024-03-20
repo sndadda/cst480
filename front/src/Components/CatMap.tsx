@@ -26,6 +26,7 @@ import MenuItem from '@mui/material/MenuItem';
 import PetsIcon from '@mui/icons-material/Pets';
 import Menu from '@mui/material/Menu';
 import Chip from '@mui/material/Chip';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import axios from 'axios';
 import "./CatMap.css";
 
@@ -54,10 +55,12 @@ function getMarkerColor(timestamp: string) {
   const currentDate = new Date();
   const diffInMilliseconds = Math.abs(currentDate.getTime() - postDate.getTime());
 
-  const diffInDays = diffInMilliseconds / (1000 * 60 * 60 * 24);
-  if (diffInDays < 1) {
+  const diffInMinutes = diffInMilliseconds / (1000 * 60);
+  const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
+
+  if (diffInMinutes < 15) {
     return 'red';
-  } else if (diffInDays < 5) {
+  } else if (diffInHours < 3) {
     return 'orange';
   } else {
     return 'grey';
@@ -91,7 +94,8 @@ function CatMap() {
     const [userProfilePic, setUserProfilePic] = useState<string | undefined>(undefined);
     const [filter, setFilter] = useState('all');
     const [category, setCategory] = useState('');
-    const [anchorEl, setAnchorEl] = React.useState(null);
+    const [anchorEl, setAnchorEl] = React.useState<null | Element>(null);
+    const commentInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         socket.connect();
@@ -172,34 +176,20 @@ function CatMap() {
           }
         });
         socket.on(SOCKET_EVENTS.COMMENTS_FETCHED, (fetchedComments) => {
-          setComments((prevComments) => [...prevComments, ...fetchedComments]);
+          setComments((prevComments) => {
+            const filteredComments = prevComments.filter((comment) => !fetchedComments.some((fetchedComment: { id: number }) => fetchedComment.id === comment.id));
+            return [...filteredComments, ...fetchedComments];
+          });
         });
 
       
         socket.on('postLiked', (data) => {
-          const { postId, likeCount } = data;
+          const { postId, likes } = data;
         
           const likeCountElement = document.querySelector(`#post-${postId}-like-count`);
           if (likeCountElement) {
-            likeCountElement.textContent = likeCount;
+            likeCountElement.textContent = likes;
           }
-        
-          setSelectedPosts((prevPosts) =>
-            prevPosts.map((post) =>
-              post.id === postId ? { ...post, likeCount } : post
-            )
-          );
-        });
-
-        socket.emit('fetchUserLikes', { userId });
-
-        socket.on('userLikesFetched', (data) => {
-          const { userLikes } = data;
-
-          setUserLikes(userLikes);
-        });
-        socket.on('postLiked', (data) => {
-          const { postId, likes } = data;
         
           setSelectedPosts((prevPosts) =>
             prevPosts.map((post) =>
@@ -216,6 +206,23 @@ function CatMap() {
           setUserLikes((prevLikes) =>
             prevLikes.includes(postId) ? prevLikes.filter((id) => id !== postId) : [...prevLikes, postId]
           );
+        });
+
+        socket.emit('fetchUserLikes', { userId });
+
+        socket.on('userLikesFetched', (data) => {
+          const { userLikes } = data;
+
+          setUserLikes(userLikes);
+        });
+        
+
+        socket.on('POST_DELETED', ({ postId }) => {
+          setSelectedPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
+        });
+
+        socket.on('MARKER_DELETED', ({ markerId }) => {
+          setMarkers((prevMarkers) => prevMarkers.filter((marker) => marker.id !== markerId));
         });
 
         axios.get('/api/loggedin')
@@ -243,45 +250,46 @@ function CatMap() {
 
 
 
-
-const renderMarkers = (markers: Marker[]) => {
-  // Remove all previously rendered markers from the map
-  renderedMarkers.forEach((marker) => marker.remove());
-
-  const newRenderedMarkers: mapboxgl.Marker[] = [];
-
-  markers.forEach((marker: Marker) => {
-    const postDate = new Date(marker.timestamp);
-    const currentDate = new Date();
-    const diffInMilliseconds = Math.abs(currentDate.getTime() - postDate.getTime());
-    const diffInDays = diffInMilliseconds / (1000 * 60 * 60 * 24);
-
-    if (filter === 'new' && diffInDays >= 2) {
-      return;
-    }
-
-    if (filter === 'old' && diffInDays < 2) {
-      return;
-    }
-
-    const color = getMarkerColor(marker.timestamp);
-    const mapboxMarker = new mapboxgl.Marker({ color })
-      .setLngLat([marker.longitude, marker.latitude])
-      .addTo(map.current!);
-
-    // Associate a click event with the marker
-    mapboxMarker.getElement().addEventListener('click', (event) => {
-      event.stopPropagation();
-      socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
-      setIsPostsModalOpen(true);
-    });
-
-    newRenderedMarkers.push(mapboxMarker);
-  });
-
-  // Save the newly rendered markers in the state
-  setRenderedMarkers(newRenderedMarkers);
-};
+    const renderMarkers = (markers: Marker[]) => {
+      renderedMarkers.forEach((marker) => marker.remove());
+    
+      const newRenderedMarkers: mapboxgl.Marker[] = [];
+    
+      const filteredMarkers = markers.filter((marker: Marker) => {
+        const postDate = new Date(marker.timestamp);
+        const currentDate = new Date();
+        const diffInMilliseconds = Math.abs(currentDate.getTime() - postDate.getTime());
+        const diffInMinutes = diffInMilliseconds / (1000 * 60);
+        //const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
+    
+        if (filter === 'new') {
+          return diffInMinutes < 15;
+        }
+    
+        if (filter === 'old') {
+          return diffInMinutes >= 15;
+        }
+    
+        return true;
+      });
+    
+      filteredMarkers.forEach((marker: Marker) => {
+        const color = getMarkerColor(marker.timestamp);
+        const mapboxMarker = new mapboxgl.Marker({ color })
+          .setLngLat([marker.longitude, marker.latitude])
+          .addTo(map.current!);
+    
+        mapboxMarker.getElement().addEventListener('click', (event) => {
+          event.stopPropagation();
+          socket.emit(SOCKET_EVENTS.FETCH_MAP_POSTS, { marker_id: marker.id });
+          setIsPostsModalOpen(true);
+        });
+    
+        newRenderedMarkers.push(mapboxMarker);
+      });
+    
+      setRenderedMarkers(newRenderedMarkers);
+    };
 
     const handlePostClick = () => {
       // convert the image to a base64 string
@@ -333,6 +341,11 @@ const renderMarkers = (markers: Marker[]) => {
     const handleClose = () => {
       setAnchorEl(null);
     };
+
+    const deletePost = (postId: number) => {
+      socket.emit('DELETE_POST', { postId });
+    };
+ 
 
     return (
         <div ref={mapContainer} style={{ width: '96%', height: '100vh' }}>
@@ -393,6 +406,24 @@ const renderMarkers = (markers: Marker[]) => {
                           <Chip label={post.category} variant="outlined" size="small" sx={{ marginLeft: 1 }} />
                         </Box>
                       </Box>
+                      <IconButton
+                        aria-label="more"
+                        aria-controls="long-menu"
+                        aria-haspopup="true"
+                        onClick={(event) => setAnchorEl(event.currentTarget)}
+                      >
+                        <MoreVertIcon />
+                      </IconButton>
+                      <Menu
+                        id="long-menu"
+                        anchorEl={anchorEl}
+                        keepMounted
+                        open={Boolean(anchorEl)}
+                        onClose={() => setAnchorEl(null)}
+                      >
+                        <MenuItem onClick={() => deletePost(post.id)}>Delete</MenuItem>
+                      </Menu>
+                  
                     </Box>
                 
                     <p style={{ marginBottom: '20px' }}>{post.content}</p>
@@ -418,7 +449,7 @@ const renderMarkers = (markers: Marker[]) => {
                     <IconButton
                       onMouseEnter={(event) => event.currentTarget.style.color = 'blue'}
                       onMouseLeave={(event) => event.currentTarget.style.color = ''}
-                      
+                      onClick={() => commentInputRef.current?.focus()}
                     >
                     <CommentIcon />
                     </IconButton>
@@ -444,9 +475,10 @@ const renderMarkers = (markers: Marker[]) => {
 
                     <div style={{ position: 'sticky', bottom: 0, backgroundColor: 'white' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mt: 0, borderRadius: 2, p: 1 }}>
-                        <Avatar sx={{ mr: 1 }}></Avatar>
+                        <Avatar src={userProfilePic} sx={{ mr: 1 }}></Avatar>
                         <TextField
                           id="comment"
+                          inputRef={commentInputRef}
                           value={commentFormData.content}
                           onChange={(e) => setCommentFormData({ ...commentFormData, content: e.target.value })}
                           placeholder="Write a comment..."

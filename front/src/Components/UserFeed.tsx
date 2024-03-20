@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { socket } from '../socket.tsx';
+import { useState, useEffect } from "react";
+import { socket } from "../socket.tsx";
 import SOCKET_EVENTS from "../socketEnums.js";
-import Avatar from '@mui/material/Avatar';
-import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
+import Avatar from "@mui/material/Avatar";
+import Modal from "@mui/material/Modal";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 // import TextField from '@mui/material/TextField';
+
 import Typography from '@mui/material/Typography';
 import Fade from '@mui/material/Fade';
 import Divider from '@mui/material/Divider';
@@ -38,6 +39,7 @@ import {Card,
 
 const UserFeed = () => {
 
+
     const defaultMarkerId = 1;
 
     interface FeedContentItem {
@@ -52,7 +54,9 @@ const UserFeed = () => {
         timestamp: string | null;
         category: string | null
         likes: number | null;
+
         image: File | string | null; 
+
         userLikes: any[] | null;
     }
     // const initialFeedPost: FeedPost = {
@@ -66,7 +70,6 @@ const UserFeed = () => {
     //     image: null,
     //     userLikes: null
     // };
-    
 
     type Comment = {
         post_id: number | null;
@@ -91,8 +94,8 @@ const UserFeed = () => {
     const [data, setData] = useState<PostData>({
         //user_id: '',
         marker_id: defaultMarkerId,
-        subject: '',
-        content: '',
+        subject: "",
+        content: "",
         image: null,
         category: '',
     });
@@ -101,9 +104,9 @@ const UserFeed = () => {
 
     const [feedContent, setFeedContent] = useState<FeedContentItem>();
 
-    const [displaySpecificPost, setDisplaySpecificPost] = useState(false)
+    const [displaySpecificPost, setDisplaySpecificPost] = useState(false);
     const [selectedPost, setSelectedPost] = useState<FeedPost>();
-    
+
     const [likedPosts, setLikedPosts] = useState<number[]>([]);
 
     const [postComments, setPostComments] = useState<any[]>([]);
@@ -152,6 +155,9 @@ const UserFeed = () => {
     
 
     useEffect(() => {
+        console.log(likedPosts); // TODO REMOVE
+        console.log(handleCommentSubmit); // TODO REMOVE
+
         socket.connect();
         console.log("connected");
         console.log(likedPosts);
@@ -162,6 +168,7 @@ const UserFeed = () => {
 
         //Get the posts to display upon load the feed page.
         socket.emit(SOCKET_EVENTS.UPDATE_FEED);
+
         socket.emit(SOCKET_EVENTS.DISPLAY_FEED_POST_COMMENTS);
         socket.emit(SOCKET_EVENTS.GET_USERNAME);
 
@@ -221,6 +228,7 @@ const UserFeed = () => {
             // console.log(feedContent?.userLikes);
         });
 
+
         socket.on(SOCKET_EVENTS.SEND_USERNAME, data => {
             setAccountUsername(data.message);
             console.log("my username:", data.message);
@@ -243,13 +251,13 @@ const UserFeed = () => {
         };
     }, [socket]);
 
+
     useEffect(() => {
         
         sortPosts();
     }, [selectedOption, feedContent]);
 
    
-
     const handleSubmit = (e: any) => {
         e.preventDefault();
 
@@ -272,12 +280,13 @@ const UserFeed = () => {
     const handleChange = (e: any) => {
         const { name, value } = e.target;
 
+
         //console.log(`name: ${name} and value: ${value}`)
         setData(prevData => ({
             ...prevData,
-            [name]: value
+            [name]: value,
         }));
-    }; 
+    };
 
     const filterOptions = [
         { label: 'Newest to Oldest', value: 'newest_to_oldest' },
@@ -328,25 +337,34 @@ const UserFeed = () => {
       }
     // const handleCommentChange = (e: any) => {
     //     const { name, value } = e.target;
-        
+
     //     setCommentData(prevData => ({
     //         ...prevData,
     //         [name]: value
     //     }));
 
-        
     // };
 
     return (
         <div className="user-feed-container">
-            <img src="cat_background.png" style={{ width: '100%', height: '100%'}}></img>
+            <img
+                src="cat_background.png"
+                style={{ width: "100%", height: "100%" }}
+            ></img>
 
-            <div style={{width: '55%'}}>
+            <div style={{ width: "55%" }}>
                 <h1 className="feed-title">Activity Feed</h1>
             </div>
-            <div className="new-post-input" onClick={() => setShowPostForm(true)}>
+            <div
+                className="new-post-input"
+                onClick={() => setShowPostForm(true)}
+            >
                 <Avatar></Avatar>
-                <input type="text" placeholder="Share what's on your mind..." readOnly />
+                <input
+                    type="text"
+                    placeholder="Share what's on your mind..."
+                    readOnly
+                />
             </div>
 
             <Modal
@@ -354,6 +372,7 @@ const UserFeed = () => {
                 onClose={() => {
                     setShowPostForm(false);
                     setData({
+
                         //user_id: '',
                         marker_id: defaultMarkerId ,
                         subject: '',
@@ -368,39 +387,74 @@ const UserFeed = () => {
                     timeout: 500,
                 }}
             >
-                <Fade in={showPostForm} onEntered={() => {
-                    setTimeout(() => {
-                        const input = document.getElementById('filled-multiline-static');
-                        if (input) input.focus();
-                    }, 0);
-                }}>
-                    <Box sx={{ position: 'relative', width: '50%', bgcolor: 'background.paper', p: 2, mx: 'auto', my: '10%', borderRadius: 2 }}>
-                        <Button 
-                            sx={{ 
-                                position: 'absolute', 
-                                top: 0, 
-                                right: 0, 
-                                color: 'black', 
-                                fontSize: 'large' 
-                            }} 
+                <Fade
+                    in={showPostForm}
+                    onEntered={() => {
+                        setTimeout(() => {
+                            const input = document.getElementById(
+                                "filled-multiline-static"
+                            );
+                            if (input) input.focus();
+                        }, 0);
+                    }}
+                >
+                    <Box
+                        sx={{
+                            position: "relative",
+                            width: "50%",
+                            bgcolor: "background.paper",
+                            p: 2,
+                            mx: "auto",
+                            my: "10%",
+                            borderRadius: 2,
+                        }}
+                    >
+                        <Button
+                            sx={{
+                                position: "absolute",
+                                top: 0,
+                                right: 0,
+                                color: "black",
+                                fontSize: "large",
+                            }}
                             onClick={() => {
                                 setShowPostForm(false);
                                 setData({
+
                                     //user_id: '',
+
                                     marker_id: defaultMarkerId,
-                                    subject: '',
-                                    content: '',
+                                    subject: "",
+                                    content: "",
                                     image: null,
                                     category: '',
                                 });
                                 
                             }}
-                        >X</Button>
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                        >
+                            X
+                        </Button>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                mb: 2,
+                            }}
+                        >
                             <Typography variant="h6">Create post</Typography>
                         </Box>
-                        <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} />
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <Divider
+                            variant="middle"
+                            sx={{ marginTop: 2, marginBottom: 2 }}
+                        />
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                mb: 2,
+                            }}
+                        >
                             <Avatar sx={{ mr: 2 }}></Avatar>
                             <Typography variant="h6">{accountUsername}</Typography>
                         </Box>
@@ -438,11 +492,13 @@ const UserFeed = () => {
                             // onChange={(e) => setData({ ...data, subject: e.target.value })}
                             onChange={handleChange}
                         />
-                        
+
                         <TextField
                             autoFocus
                             id="filled-multiline-static"
+
                             label={data.content ? '' : 'Write here...'}
+
                             multiline
                             rows={4}
                             variant="outlined"
@@ -450,6 +506,7 @@ const UserFeed = () => {
                             onChange={handleChange}
                             name="content"
                             value={data.content}
+
                             style={{paddingTop: '10px', paddingBottom: '10px'}}
                             // InputLabelProps={{
                             //     style: {
@@ -468,27 +525,33 @@ const UserFeed = () => {
                             sx={{ 
                                 '.MuiFilledInput-root': { 
                                     backgroundColor: 'white',
+
                                     borderRadius: 0,
-                                    '&:hover': {
-                                        backgroundColor: 'white',
+                                    "&:hover": {
+                                        backgroundColor: "white",
                                     },
-                                    '&.Mui-focused': {
-                                        backgroundColor: 'white',
-                                    },
-                                },
-                                '.MuiFilledInput-input': {
-                                    backgroundColor: 'white',
-                                    '&:hover': {
-                                        backgroundColor: 'white',
-                                    },
-                                    '&.Mui-focused': {
-                                        backgroundColor: 'white',
+                                    "&.Mui-focused": {
+                                        backgroundColor: "white",
                                     },
                                 },
-                                '.MuiFilledInput-underline:before': { borderBottom: 'none' },
-                                '.MuiFilledInput-underline:after': { borderBottom: 'none' }
+                                ".MuiFilledInput-input": {
+                                    backgroundColor: "white",
+                                    "&:hover": {
+                                        backgroundColor: "white",
+                                    },
+                                    "&.Mui-focused": {
+                                        backgroundColor: "white",
+                                    },
+                                },
+                                ".MuiFilledInput-underline:before": {
+                                    borderBottom: "none",
+                                },
+                                ".MuiFilledInput-underline:after": {
+                                    borderBottom: "none",
+                                },
                             }}
                         />
+
 
 
                         <input type="file" style={{paddingBottom: '10px'}} onChange={(e) => {
@@ -516,6 +579,7 @@ const UserFeed = () => {
                                 backgroundColor: data.content ? '#0861F2' : '#E5E6EB',
                                 '&:hover': {
                                     backgroundColor: data.content ? '#0861F2' : '#E5E6EB',
+
                                 },
                             }}
                         >
@@ -525,6 +589,7 @@ const UserFeed = () => {
                     </Box>
                 </Fade>
             </Modal>
+
 
             {/* Filtering */}
             {/* <FormControl style={{ minWidth: 120, padding: '1px'}}>
@@ -663,6 +728,30 @@ const UserFeed = () => {
                         </div>
 
 
+                            <div
+                                onClick={() => {
+                                    //console.log(post.id);
+                                    socket.emit(
+                                        SOCKET_EVENTS.LIKE_POST,
+                                        post.id
+                                    );
+                                }}
+                            >
+                                {feedContent.userLikes?.some(
+                                    (like) => like.post_id === post.id
+                                ) ? (
+                                    <FavoriteIcon
+                                        id={`post-${post.id}-heart-icon`}
+                                        style={{ color: "red" }}
+                                    />
+                                ) : (
+                                    <FavoriteBorderIcon
+                                        id={`post-${post.id}-heart-icon`}
+                                    />
+                                )}
+                            </div>
+
+
                         {/* <Divider />
                         <Typography variant="subtitle1">Posted: {post.timestamp}</Typography> */}
                         
@@ -696,10 +785,13 @@ const UserFeed = () => {
                     }}
                 >
                     <Fade in={displaySpecificPost} onEntered={() => {
+
                         setTimeout(() => {
-                            const input = document.getElementById('modal-post-comment');
+                            const input =
+                                document.getElementById("modal-post-comment");
                             if (input) input.focus();
                         }, 0);
+
                     }}>
                         {/* <Box sx={{ position: 'relative', width: '50%', bgcolor: 'background.paper', p: 2, mx: 'auto', my: '10%', borderRadius: 2 }}> */}
                             
@@ -1051,8 +1143,9 @@ const UserFeed = () => {
                 </Modal>
                     
             
+
         </div>
     );
-}
+};
 
 export default UserFeed;

@@ -7,7 +7,7 @@
     "watch": "npm run build && tsc-watch --onSuccess \"npm run start\"",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --rootDir=src",
     "build:deploy": "npm run build && cd ../front && npm run build && mv dist ../back/out/public",
-    "start:deploy": "cd out && pm2 start server.js --port 3000"
+    "start:deploy": "cd out && pm2 start server.js --name mangecat -- --port 3000"
   },
   "type": "module",
   "dependencies": {

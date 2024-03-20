@@ -8,7 +8,7 @@ import MenuItem from '@mui/material/MenuItem';
 import "./Layout.css";
 import Login from "./Login";
 
-function Header({ setRefresh, name, setName }: any) {
+function Header({ setRefresh, name, setName, profilePic, setProfilePic }: any) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const navigate = useNavigate();
 
@@ -18,6 +18,7 @@ function Header({ setRefresh, name, setName }: any) {
             await axios.post("/api/logout");
             setRefresh("logout");
             setName(null);
+            setProfilePic(null);
         } catch (error) {
             console.log(getServerErrorMessages(error)); // TODO maybe remove???
         }
@@ -35,6 +36,7 @@ function Header({ setRefresh, name, setName }: any) {
             <div className="profile-section" style={{ display: 'flex', alignItems: 'center' }}>
                 {name && <span style={{ color: 'black', marginRight: '10px' }}>Welcome, {name}</span>}
                 <Avatar
+                    src={profilePic}
                     onClick={(event) => setAnchorEl(event.currentTarget)}
                 />
                 <Menu
@@ -52,6 +54,7 @@ function Header({ setRefresh, name, setName }: any) {
 
 function Layout() {
     let [name, setName] = useState<string | null>(null);
+    let [profilePic, setProfilePic] = useState<string | null>(null);
     let [loggedInStatus, setLoggedInStatus] = useState<boolean>(false);
     let [refresh, setRefresh] = useState(""); // this is used to manually trigger useEffect when user logs in or out
 
@@ -59,10 +62,11 @@ function Layout() {
         (async () => {
             try {
                 let {
-                    data: { loggedIn, name },
-                } = await axios.get<{ loggedIn: boolean, name: string }>("/api/loggedin");
+                    data: { loggedIn, name, image },
+                } = await axios.get<{ loggedIn: boolean, name: string, image: string }>("/api/loggedin");
                 setLoggedInStatus(loggedIn);
                 setName(name);
+                setProfilePic(image);
             } catch (error) {
                 console.log(getAxiosErrorMessages(error));
             }
@@ -72,7 +76,7 @@ function Layout() {
     let layoutPage = (
         <>
             <nav>
-                <Header setRefresh={setRefresh} name={name} setName={setName} />
+                <Header setRefresh={setRefresh} name={name} setName={setName} profilePic={profilePic} setProfilePic={setProfilePic} />
             </nav>
             <main>
                 <Outlet />

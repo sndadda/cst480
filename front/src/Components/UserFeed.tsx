@@ -12,6 +12,8 @@ import Divider from '@mui/material/Divider';
 import './UserFeed.css';
 import CommentIcon from '@mui/icons-material/Comment';
 
+import Chip from '@mui/material/Chip';
+
 // import Card from '@mui/material/Card';
 // import CardContent from '@mui/material/CardContent';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -27,7 +29,8 @@ import {Card,
         OutlinedInput, 
         FormControl,
         Select, 
-        MenuItem
+        MenuItem,
+        Alert 
     } from '@mui/material'
 
     
@@ -47,6 +50,7 @@ const UserFeed = () => {
         subject: string | null;
         content: string | null;
         timestamp: string | null;
+        category: string | null
         likes: number | null;
         image: File | string | null; 
         userLikes: any[] | null;
@@ -57,6 +61,7 @@ const UserFeed = () => {
         subject: null,
         content: null,
         timestamp: null,
+        category: null,
         likes: null,
         image: null,
         userLikes: null
@@ -80,6 +85,7 @@ const UserFeed = () => {
         subject: string | null;
         content: string | null;
         image: any; 
+        category: string;
         
     }
     const [data, setData] = useState<PostData>({
@@ -88,6 +94,7 @@ const UserFeed = () => {
         subject: '',
         content: '',
         image: null,
+        category: '',
     });
     const [commentData, setCommentData] = useState<Comment>(initialCommentData);
     const [showPostForm, setShowPostForm] = useState(false);
@@ -106,11 +113,14 @@ const UserFeed = () => {
 
 
     const [postIdForModal, setpostIdForModal] = useState<number | null >(null);
-    const [showCommentField, setShowCommentField] = useState<boolean>(false);
-    const [replyTo, setReplyTo] = useState<{username: string; user_id: number, comment_id: number}>({username: "", user_id: -1, comment_id: -1});
+    const [showCommentField, setShowCommentField] = useState<boolean>(true);
+    const [replyTo, setReplyTo] = useState<{username: string | null; user_id: number | null, comment_id: number | null}>({username: "", user_id: -1, comment_id: -1});
     
     const [selectedOption, setSelectedOption] = useState('newest_to_oldest');
     const [sortedPosts, setSortedPosts] = useState<any[]>([]);
+    const [accountUsername, setAccountUsername] = useState<string>('');
+    const [category, setCategory] = useState('');
+    const [showErrorMsgPost, setShowErrorMsgPost] = useState(false);
 
     const sortPosts = () => {
         if (feedContent) {
@@ -121,9 +131,22 @@ const UserFeed = () => {
                 sorted.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
             } else if (selectedOption === 'oldest_to_newest') {
                 sorted.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            } else if (categories.includes(selectedOption)) {
+                console.log("selectedOption", selectedOption)
+                sorted = sorted.filter(post => post.category === selectedOption);
+                console.log("sorted", sorted);
             }
     
             setSortedPosts(sorted);
+        }
+    };
+
+    const filterPostsByCategory = () => {
+        if (feedContent && selectedOption) {
+            const filteredPosts = feedContent.message.filter(post => selectedOption.includes(post.category));
+            setSortedPosts(filteredPosts);
+            
+
         }
     };
     
@@ -135,9 +158,10 @@ const UserFeed = () => {
         //Get the posts to display upon load the feed page.
         socket.emit(SOCKET_EVENTS.UPDATE_FEED);
         socket.emit(SOCKET_EVENTS.DISPLAY_FEED_POST_COMMENTS);
+        socket.emit(SOCKET_EVENTS.GET_USERNAME);
 
         socket.on(SOCKET_EVENTS.UPDATE_FEED, (data : FeedContentItem)=> {
-            //console.log("data", data);
+            console.log("data", data);
             setFeedContent(data);
             // console.log(typeof postIdForModal);
             // if (typeof postIdForModal === 'number') {
@@ -166,7 +190,7 @@ const UserFeed = () => {
                 
                 
             // }
-            console.log("feedcontent", feedContent);
+            //console.log("feedcontent", feedContent);
             if (selectedPost && data) {
                 // console.log('whyyyy');
                 // console.log("what is the selecetedPost id I have right now: ", selectedPost.id);
@@ -187,7 +211,14 @@ const UserFeed = () => {
             
             setUpdateLikeIcon(1);
 
+        
+
             // console.log(feedContent?.userLikes);
+        });
+
+        socket.on(SOCKET_EVENTS.SEND_USERNAME, data => {
+            setAccountUsername(data.message);
+            console.log("my username:", data.message);
         });
 
         //update the comments for the current selected post.
@@ -201,6 +232,7 @@ const UserFeed = () => {
         return () => {
             socket.off(SOCKET_EVENTS.UPDATE_FEED);
             socket.off(SOCKET_EVENTS.UPDATE_POST);
+            socket.off(SOCKET_EVENTS.SEND_USERNAME);
             socket.disconnect();
             console.log("disconnected");
         };
@@ -215,7 +247,16 @@ const UserFeed = () => {
 
     const handleSubmit = (e: any) => {
         e.preventDefault();
-        socket.emit(SOCKET_EVENTS.CREATE_POST, data);
+
+        if (data.content && data.subject && data.category && data.content) {
+            setShowErrorMsgPost(false);
+            setShowPostForm(false);
+            socket.emit(SOCKET_EVENTS.CREATE_POST, data);
+
+        } else {
+            setShowErrorMsgPost(true);
+        }
+        
     };
 
     const handleCommentSubmit = (e: any) => {
@@ -236,10 +277,22 @@ const UserFeed = () => {
     const filterOptions = [
         { label: 'Newest to Oldest', value: 'newest_to_oldest' },
         { label: 'Oldest to Newest', value: 'oldest_to_newest' },
-        { label: 'Option 3', value: 'option3' },
+        { label: 'Urgent', value: 'URGENT' },
+        { label: 'TNR', value: 'TNR' },
+        { label: 'Lost Pet', value: 'LOST PET' },
+        { label: 'Need Advice', value: 'NEED ADVICE' },
+        { label: 'Supplies', value: 'SUPPLIES' },
+        { label: 'None', value: 'none' },
+
+        
     ];
 
-    
+
+
+    const categories = ['URGENT', 'TNR', 'LOST PET', 'NEED ADVICE', 'SUPPLIES'];
+
+   
+
 
     function arrayBufferToBase64(buffer:any) {
         let binary = '';
@@ -250,6 +303,24 @@ const UserFeed = () => {
         }
         return btoa(binary);
     }
+
+    function formatTimestamp(timestamp: string) {
+        const postDate = new Date(timestamp);
+        const currentDate = new Date();
+        const diffInMilliseconds = Math.abs(currentDate.getTime() - postDate.getTime());
+      
+        const diffInMinutes = diffInMilliseconds / 60000;
+        if (diffInMinutes < 60) {
+          return `${Math.round(diffInMinutes)}m`;
+        }
+      
+        const diffInHours = diffInMilliseconds / 3600000;
+        if (diffInHours < 24) {
+          return `${Math.round(diffInHours)}h`;
+        } else {
+          return `${Math.round(diffInHours / 24)}d`;
+        }
+      }
     // const handleCommentChange = (e: any) => {
     //     const { name, value } = e.target;
         
@@ -283,7 +354,9 @@ const UserFeed = () => {
                         subject: '',
                         content: '',
                         image: null,
+                        category: '',
                     });
+                    setCategory("");
                 }}
                 closeAfterTransition
                 BackdropProps={{
@@ -313,7 +386,9 @@ const UserFeed = () => {
                                     subject: '',
                                     content: '',
                                     image: null,
+                                    category: '',
                                 });
+                                
                             }}
                         >X</Button>
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
@@ -322,35 +397,35 @@ const UserFeed = () => {
                         <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} />
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                             <Avatar sx={{ mr: 2 }}></Avatar>
-                            <Typography variant="h6">Username</Typography>
+                            <Typography variant="h6">{accountUsername}</Typography>
                         </Box>
-                        {/* <FormControl variant='outlined' fullWidth sx={{ mb: 2 }}>
-                            <InputLabel htmlFor="subject" sx={{ position: 'relative' }}>Subject</InputLabel>
-                            <OutlinedInput
-                                id="subject"
-                                value={data.subject}
-                                onChange={handleChange}
-                                placeholder="Subject"
-                                sx={{
-                                  height: 30, // Adjust the height as needed
-                                  borderRadius: 20, // Adjust the border radius as needed
-                                  '.MuiOutlinedInput-notchedOutline': {
-                                    borderColor: 'grey',
-                                  },
-                                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: 'black',
-                                  },
-                                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: 'blue',
-                                  },
+                        
+
+                        {/* Catagories Menu */}
+                        <FormControl fullWidth style={{paddingBottom: '15px'}}>
+                            <InputLabel id="category-label">Select Category</InputLabel>
+                            <Select
+                                labelId="category-label"
+                                id="category"
+                                value={category}
+                                label="Select Category"
+                                onChange={(e) => {
+                                    setCategory(e.target.value);
+                                    setData({...data, category: e.target.value})
                                 }}
-                            />
-                        </FormControl> */}
+                            >
+                                {categories.map((categoryItem) => (
+                                <MenuItem key={categoryItem} value={categoryItem}>
+                                    {categoryItem}
+                                </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
 
 
                         <TextField
-                            id="subject"
-                            label="subject"
+                            id="Subject"
+                            label="Subject"
                             name="subject"
                             variant="outlined"
                             fullWidth
@@ -362,28 +437,29 @@ const UserFeed = () => {
                         <TextField
                             autoFocus
                             id="filled-multiline-static"
-                            label={data.content ? '' : 'Write something...'}
+                            label={data.content ? '' : 'Write here...'}
                             multiline
                             rows={4}
-                            variant="filled"
+                            variant="outlined"
                             fullWidth
                             onChange={handleChange}
                             name="content"
                             value={data.content}
-                            InputLabelProps={{
-                                style: {
+                            style={{paddingTop: '10px', paddingBottom: '10px'}}
+                            // InputLabelProps={{
+                            //     style: {
                                     
-                                    fontSize: '22px', 
-                                    color: 'grey'
-                                },
-                                shrink: data.content ? true : false
-                            }}
-                            InputProps={{
-                                disableUnderline: true,
-                                style: {
-                                    fontSize: '22px',
-                                },
-                            }}
+                            //         fontSize: '22px', 
+                            //         color: 'grey'
+                            //     },
+                            //     shrink: data.content ? true : false
+                            // }}
+                            // InputProps={{
+                            //     disableUnderline: true,
+                            //     style: {
+                            //         fontSize: '22px',
+                            //     },
+                            // }}
                             sx={{ 
                                 '.MuiFilledInput-root': { 
                                     backgroundColor: 'white',
@@ -410,9 +486,18 @@ const UserFeed = () => {
                         />
 
 
-                        <input type="file" onChange={(e) => {
+                        <input type="file" style={{paddingBottom: '10px'}} onChange={(e) => {
                             setData({ ...data, image: e.target.files && e.target.files.length > 0 ? e.target.files[0] : null })
                         }} />
+
+                        {
+                            showErrorMsgPost && 
+                            <Alert severity="error" sx={{ border: '1px solid red', borderRadius: '4px', alignItems: 'center', display: 'flex' }}>
+                                {/* <ErrorOutline sx={{ mr: 1 }} /> */}
+                                Please check that all fields are completed.
+                            </Alert>
+
+                        }
                         <Button 
                             variant="contained" 
                             onClick={handleSubmit}
@@ -437,8 +522,10 @@ const UserFeed = () => {
             </Modal>
 
             {/* Filtering */}
-            <FormControl style={{ minWidth: 120, padding: '20px'}}>
-                <InputLabel id="filter-label">Filter</InputLabel>
+            {/* <FormControl style={{ minWidth: 120, padding: '1px'}}>
+                <InputLabel id="filter-label">Filter</InputLabel> */}
+            <FormControl style={{ minWidth: 120, paddingTop: '30px', paddingBottom: '30px'}}>
+                <InputLabel id="filter-label" sx={{ paddingTop: '20px' }}>Filter</InputLabel>
                 <Select
                     labelId="filter-label"
                     id="filter-select"
@@ -446,6 +533,7 @@ const UserFeed = () => {
                     onChange={(e) => {
                         setSelectedOption(e.target.value);
                     }}
+                    
                 >
                     {filterOptions.map((option, index) => (
                         <MenuItem key={index} value={option.value}>
@@ -456,55 +544,57 @@ const UserFeed = () => {
             </FormControl>
 
             {sortedPosts && sortedPosts.map((post, index) => (
+               
                     <Card 
                         key={index} 
                         // onClick={() => {
                         //     setSelectedPost({...post,userLikes: feedContent.userLikes});
                         //     setDisplaySpecificPost(true);
                         // }}
+                        //style={{ marginBottom: '20px', paddingTop: '10px', paddingBottom: '10px' }}
+                        style={{ marginBottom: '20px', width: '500px', height: '550px' }}
                     >
                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: 16 }}>
                         <div>
                            
                         </div>
                         {/* Expand button */}
-                        <Button
-                            variant="outlined"
-                            onClick={() => {
-                           
-                                //setSelectedPost({...post, userLikes: feedContent.userLikes, image: arrayBufferToBase64(post.image)});
-                                socket.emit(SOCKET_EVENTS.DISPLAY_FEED_POST_COMMENTS, selectedPost?.id);
-                                setSelectedPost({...post, userLikes: feedContent?.userLikes});
-                                setDisplaySpecificPost(true);
-                                setIsLikedModalforPost(selectedPost?.userLikes?.some(like => like.post_id === selectedPost?.id) ? true : false);
-                                //setpostIdForModal(post.id);
-                                
-                            }}
-                        >
-                            Expand
-                        </Button>
+                        
                     </div>
                         {/**new changes */}
                     <CardContent>
-                        {/* <Button
-                            variant="outlined"
-                            style={{ position: 'relative', top: 10, right: 10 }}
-                            onClick={() => {
-                                // Handle expand button click
-                                setSelectedPost({...post, userLikes: feedContent.userLikes});
-                                setDisplaySpecificPost(true);
-                            }}
-                            >
-                                Expand
-                        </Button> */}
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-                            <Avatar></Avatar>
-                            <Typography variant="subtitle1">{post.username}</Typography>
-                        </div>
-                        <Typography variant="subtitle1">Subject: {post.subject}</Typography>
-                        <Divider />
-                        <Typography variant="body1">Post: {post.content}</Typography>
-                        <Divider />
+                        
+                        
+                        
+
+                        
+                               
+
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="h6">{post.subject}</Typography>
+                            </Box>
+                                <Divider variant="middle" style={{ marginTop: 2, marginBottom: 2 }} />
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <Avatar sx={{ mr: 2 }}></Avatar>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                            <Typography variant="h6">{post.username}</Typography>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <Typography variant="body2">{formatTimestamp(post.timestamp)}</Typography>
+                                    <Chip label={post.category} variant="outlined" size="small" sx={{ marginLeft: 1 }} />
+
+                                    
+                                </Box>
+                            </Box>
+                        </Box>
+                
+                        
+                        <Box style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                            <Typography variant="body1" component="div" style={{ marginBottom: '20px', wordWrap: 'break-word' }}>
+                                {post.content}
+                            </Typography>
+                        </Box>
+                        
+                            
                         
                         {post.image && (
                             <div>
@@ -512,40 +602,72 @@ const UserFeed = () => {
 
                                     src={post.image}
                                     //src={typeof post.image === 'string' ? `data:image/jpeg;base64,${post.image}` : `data:image/jpeg;base64,${arrayBufferToBase64(post.image)}`}
-                                    style={{ width: '100px', height: '100px' }}
+                                    //style={{ width: '500px', height: '200px' }}
+                                    style={{ maxWidth: '100%', maxHeight: '200px', width: 'auto', height: 'auto' }}
                                     alt="Post Image"
                                 />
 
 
-                                <p>{post.image ? `${typeof post.image}`: `${typeof post.image}`}</p>
+                                {/* <p>{post.image ? `${typeof post.image}`: `${typeof post.image}`}</p> */}
                             </div>
                         )}
-                        <Divider />
-                        <Typography variant="subtitle1">Likes {post.likes}</Typography>
+
+
+                        {/* <Divider />
+                        <Typography variant="subtitle1">Likes {post.likes}</Typography> */}
                         
                         
                         <div onClick={() => 
                             {
-                                console.log(post.id);
-                                socket.emit(SOCKET_EVENTS.LIKE_POST, post.id);
+                                // console.log(post.id);
+                                // socket.emit(SOCKET_EVENTS.LIKE_POST, post.id);
                                 
                                 
                             
                             }}
                         >
+                            {/* <Divider variant="middle" sx={{ marginTop: 2, width: '100%', paddingBottom: '50px', margin: 0 }} /> */}
+                            <Divider
+                                variant="middle"
+                                sx={{
+                                position: 'absolute',
+                                top: '50%', 
+                                left: 0,
+                                width: '100%',
+                                marginTop: '-1px' 
+                                }}
+                            />
                             {feedContent?.userLikes?.some(like => like.post_id === post.id) ? (
-                                <FavoriteIcon id={`post-${post.id}-heart-icon`} style={{ color: 'red' }} />
+                                <FavoriteIcon id={`post-${post.id}-heart-icon`} style={{ color: 'red' }} onClick={() => socket.emit(SOCKET_EVENTS.LIKE_POST, post.id)}/>
                             ) : (
-                                <FavoriteBorderIcon id={`post-${post.id}-heart-icon`} />
+                                <FavoriteBorderIcon id={`post-${post.id}-heart-icon`} onClick={() => socket.emit(SOCKET_EVENTS.LIKE_POST, post.id)}/>
                             )}
+
+                            <span id={`post-${post.id}-like-count`} style={{paddingRight: '15px'}}>{post.likes}</span>
+                            <CommentIcon onClick={() => {
+                                //setSelectedPost({...post, userLikes: feedContent.userLikes, image: arrayBufferToBase64(post.image)});
+                                socket.emit(SOCKET_EVENTS.DISPLAY_FEED_POST_COMMENTS, selectedPost?.id);
+                                console.log("selectedPost?.id", selectedPost?.id);
+                                setSelectedPost({...post, userLikes: feedContent?.userLikes});
+                                console.log("setSelectedPost", {...post, userLikes: feedContent?.userLikes})
+                                setDisplaySpecificPost(true);
+                                setIsLikedModalforPost(selectedPost?.userLikes?.some(like => like.post_id === selectedPost?.id) ? true : false);
+                                //setpostIdForModal(post.id);
+                            }} />
                             
                         </div>
 
 
-                        <Divider />
-                        <Typography variant="subtitle1">Posted: {post.timestamp}</Typography>
+                        {/* <Divider />
+                        <Typography variant="subtitle1">Posted: {post.timestamp}</Typography> */}
                         
-                        
+                        {/* <Button 
+                            variant="contained"
+                            onClick={() => socket.emit(SOCKET_EVENTS.DELETE_FEED_POST, post.id)}
+                            style={{marginTop: "55px", marginLeft: "350px"}}
+                            >
+                                Delete
+                        </Button> */}
                     </CardContent>
                     </Card>
                 ))}
@@ -556,11 +678,12 @@ const UserFeed = () => {
                     open={displaySpecificPost}
                     onClose={() => {
                         //setSelectedPost();
-                        setCommentData(initialCommentData);
+                        //setCommentData(initialCommentData);
                         setDisplaySpecificPost(false);
                         setpostIdForModal(null);
-                        setShowCommentField(false);
+                        //setShowCommentField(false);
                         //setSelectedPost()
+                        setCommentData({...commentData, content: ''});
                     }}
                     closeAfterTransition
                     BackdropProps={{
@@ -587,12 +710,11 @@ const UserFeed = () => {
                                     mx: 'auto',
                                     my: '10%',
                                     borderRadius: 2,
-                                    overflowY: 'scroll', // Enable vertical scrolling
-                                    maxHeight: '80vh', // Limit maximum height to 80% of viewport height
+                                    overflowY: 'scroll', 
+                                    maxHeight: '80vh', 
                                 }}
                             >
-                                {/* Your modal content */}
-                                {/* Include all the content you have in the modal here */}
+                               
                             <Button 
                                 sx={{ 
                                     position: 'absolute', 
@@ -603,25 +725,43 @@ const UserFeed = () => {
                                 }} 
                                 onClick={() => {
                                     setDisplaySpecificPost(false);
-                                    setShowCommentField(false);
+                                    //setShowCommentField(false);
+                                    setCategory("");
+                                    setCommentData({...commentData, content: ''});
                                 }}
                             > X
                             </Button>
-                            {/* <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-                                <Typography variant="h6">Create post</Typography>
-                            </Box>
-                            <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} /> */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <Avatar sx={{ mr: 2 }}></Avatar>
-                                <Typography variant="h6">{selectedPost && selectedPost.username}</Typography>
-                            </Box>
-                            <Typography variant="h5" gutterBottom>
-                               Subject: {selectedPost && selectedPost.subject} {/* Display post subject */}
-                            </Typography>
-                            <Typography variant="body1" gutterBottom>
-                                {selectedPost && selectedPost.content} {/* Display post content */}
-                            </Typography>
-                            <Divider />
+                            
+
+
+
+                            
+
+                        {selectedPost && 
+                        
+                        <>
+                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6">{selectedPost && selectedPost.subject}</Typography>
+                                </Box>
+                                    <Divider variant="middle" sx={{ marginTop: 2, marginBottom: 2 }} />
+                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                        <Avatar sx={{ mr: 2 }}></Avatar>
+                                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                                <Typography variant="h6">{selectedPost && selectedPost.username}</Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Typography variant="body2">{selectedPost.timestamp ? formatTimestamp(selectedPost.timestamp) : 'N/A'}</Typography>
+                                        <Chip label={selectedPost && selectedPost.category} variant="outlined" size="small" sx={{ marginLeft: 1 }} />
+
+                                        
+                                    </Box>
+                                </Box>
+                            </Box> 
+
+                            
+                        </>
+                        
+
+                        }
                             {selectedPost?.image && (
                                 <div>
                                     <img
@@ -636,7 +776,8 @@ const UserFeed = () => {
                                             selectedPost.image : 
                                             URL.createObjectURL(selectedPost.image)
                                         }
-                                        style={{ width: '100px', height: '100px' }}
+                                        //style={{ width: '100px', height: '100px' }}
+                                        style={{ maxWidth: '100%', maxHeight: '200px', width: 'auto', height: 'auto' }}
                                         alt="Post Image"
                                     />
 
@@ -703,12 +844,25 @@ const UserFeed = () => {
                                 } */}
                                 
                             </div>
+
+                            <CommentIcon 
+                                onClick={() => {
+                                    //setShowCommentField(!showCommentField);
+                                    console.log(selectedPost?.username)
+                                    console.log(selectedPost?.id)
+                                    setReplyTo({
+                                        username: selectedPost?.username ? selectedPost.username : null, 
+                                        user_id: selectedPost?.id ? selectedPost.id : null, 
+                                        comment_id: null
+                                    });
+                                }}
+                            />
                            
                             {/*Comment box for post */}
                             
                             {showCommentField && 
                             <>
-                                <p>Reply to @{replyTo.username}</p>
+                                {/* <p>Reply to @{replyTo.username}</p> */}
                                 <TextField
                                     id="modal-post-comment"
                                     label="Write a comment"
@@ -726,18 +880,50 @@ const UserFeed = () => {
                                         });
                                     }}
                                 />
-                                
+                                {/* <CommentIcon onClick={() => {console.log('what!!');}}/> */}
                                 <Button 
                                     variant="contained" 
                                     onClick={() => {
-                                        setCommentData({
-                                            ...commentData,
-                                            post_id: selectedPost ? selectedPost.id : null,
-                                            parent_comment_id: replyTo.comment_id,
 
-                                        });
-                                        console.log("commentData to be sent", commentData);
-                                        socket.emit(SOCKET_EVENTS.CREATE_COMMENT, commentData);
+                                        console.log("what is this!!!", selectedPost ? selectedPost.id : null)
+
+                                        if (selectedPost) {
+                                            console.log("manual data entry");
+                                            console.log("Post_id: ", selectedPost.id);
+                                            console.log("content", commentData.content);
+
+                                            socket.emit(SOCKET_EVENTS.CREATE_COMMENT, 
+                                                {
+                                                    post_id: selectedPost.id, 
+                                                    content: commentData.content,
+                                                    parent_comment_id: null,
+                                                }
+                                            )
+                                            setCommentData({...commentData, content: ''});
+                                            //commentData.content = "";
+                                        }
+                                        // if (selectedPost) {
+                                        //     setCommentData({
+                                        //         ...commentData,
+                                        //         post_id: selectedPost.id,
+                                        //         parent_comment_id: replyTo.comment_id,
+    
+                                        //     });
+                                        //     console.log("commentData to be sent", commentData);
+                                        // }
+                                        
+                                        
+                                        // const interval = setInterval(() => {
+                                        //     if (commentData.post_id === selectedPost?.id) {
+                                        //         clearInterval(interval); 
+                                        //         console.log("commentData to be sent", commentData);
+                                        //         socket.emit(SOCKET_EVENTS.CREATE_COMMENT, commentData);
+                                        //     }
+                                        // }, 100);
+                                        
+                                        
+
+                                        // setCommentData({...commentData, content: ''});
                                     }}
                                     disabled={!commentData.content || !commentData.content.trim()}
                                     sx={{ 
@@ -745,14 +931,16 @@ const UserFeed = () => {
                                     width: '100%', 
                                     mx: 'auto',
                                     color: commentData.content ? 'white' : '#BCC0C4',
-                                    backgroundColor: commentData.content ? '#0861' : '#E5E6EB',
+                                    backgroundColor: commentData.content ? '#0861F2'  : '#E5E6EB',
                                     '&:hover': {
                                         backgroundColor: commentData.content ? '#0861F2' : '#E5E6EB',
                                     },
                                     }}
                                 >
-                                    Post
+                                    Comment
                                 </Button>
+
+                                
                             </>
                             }   
 
@@ -769,12 +957,12 @@ const UserFeed = () => {
                             
                             
 
-                            {selectedPost && postComments
-                                .filter(comment => comment.post_id === selectedPost.id) // Filter comments by post_id
-                                .filter(comment => !comment.parent_comment_id) // Filter only parent comments
+                            {/* {selectedPost && postComments
+                                .filter(comment => comment.post_id === selectedPost.id) 
+                                .filter(comment => !comment.parent_comment_id)
                                 .map((parentComment, parentIndex) => (
                                     <div key={parentIndex}>
-                                        {/* Display parent comment */}
+                                       
                                         <Typography variant="body1">User: {parentComment.username}</Typography>
                                         <Typography variant="body1">Content: {parentComment.content}</Typography>
                                         <Typography variant="body1">Timestamp: {parentComment.timestamp}</Typography>
@@ -785,12 +973,12 @@ const UserFeed = () => {
                                             }}
                                         />
                                         <Divider />
-                                        {/* Display child comments */}
+                                      
                                         {postComments
                                             .filter(comment => comment.parent_comment_id === parentComment.id) // Filter child comments for this parent
                                             .map((childComment, childIndex) => (
                                                 <div key={childIndex} style={{ marginLeft: 50 }}>
-                                                    {/* Display child comment */}
+                                                    
                                                     <Typography variant="body1">User: {childComment.username}</Typography>
                                                     <Typography variant="body1">Content: {childComment.content}</Typography>
                                                     <Typography variant="body1">Timestamp: {childComment.timestamp}</Typography>
@@ -798,6 +986,8 @@ const UserFeed = () => {
                                                         onClick={() => {
                                                             setShowCommentField(!showCommentField);
                                                             setReplyTo({username: childComment.username, user_id: childComment.user_id, comment_id: childComment.id});
+                                                            console.log("replyTo", replyTo);
+                                                            console.log('hello');
                                                         }}
                                                     />
                                                     <Divider />
@@ -806,8 +996,44 @@ const UserFeed = () => {
                                         }
                                     </div>
                                 ))
+                            } */}
+                            {selectedPost && postComments
+                                .filter(comment => comment.post_id === selectedPost.id)
+                                .map((comment, index) => (
+                                    <div key={index}>
+                                       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                                            <Avatar sx={{ mr: 2 }} style={{marginTop: '10px'}}></Avatar>
+                                            <Typography variant="h6">{comment.username}</Typography>
+                                            <Typography variant="body1" style={{paddingLeft: '10px'}}>Posted {formatTimestamp(comment.timestamp)} ago</Typography>
+                                        </Box>
+                                        
+                                    
+                                        
+
+                                        <Typography variant="body1">{comment.content}</Typography>
+                                      
+                                        <Divider />
+                                    </div>
+                                ))
                             }
 
+
+{/* <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="h6">{post.subject}</Typography>
+                            </Box>
+                                <Divider variant="middle" style={{ marginTop: 2, marginBottom: 2 }} />
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <Avatar sx={{ mr: 2 }}></Avatar>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                            <Typography variant="h6">{post.username}</Typography>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <Typography variant="body2">{formatTimestamp(post.timestamp)}</Typography>
+                                    <Chip label={post.category} variant="outlined" size="small" sx={{ marginLeft: 1 }} />
+
+                                    
+                                </Box>
+                            </Box>
+                        </Box> */}
                             
                         
 

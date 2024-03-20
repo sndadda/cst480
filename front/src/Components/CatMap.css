@@ -5,7 +5,13 @@
 
   .MuiBox-root {
     overflow-y: auto;
-    max-height: 90vh; /* or any other value that suits your needs */
+    max-height: 90vh; 
   }
 
   
+  .map-select {
+    position: absolute;
+    z-index: 1;
+    left: 10px;
+    top: 10px;
+  }

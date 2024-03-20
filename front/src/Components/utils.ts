@@ -72,6 +72,7 @@ interface Marker {
     id: number;
     latitude: number;
     longitude: number;
+    timestamp: string;
     mapboxMarker?: mapboxgl.Marker;
 }
 
@@ -85,6 +86,16 @@ interface MapPost {
     timestamp: string;
     likes: number;
     image: string;
+    userProfilePic: string;
+    category: string;
+}
+interface MapPostComment {
+    id: number;
+    post_id: number;
+    name: string;
+    content: string;
+    timestamp: string;
+    likes: number;
 }
 
 interface CuteCatLike {
@@ -115,4 +126,5 @@ export type {
     MapPost,
     CuteCatComment,
     CuteCatCommentSubmit,
+    MapPostComment,
 };

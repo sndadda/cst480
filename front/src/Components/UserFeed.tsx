@@ -584,7 +584,7 @@ const UserFeed = () => {
                                         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                                             <Typography variant="h6">{post.username}</Typography>
                                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Typography variant="body2">{formatTimestamp(post.timestamp)}</Typography>
+                                    <Typography variant="body2">{(post.timestamp)}</Typography>
                                     <Chip label={post.category} variant="outlined" size="small" sx={{ marginLeft: 1 }} />
 
                                     
@@ -754,7 +754,7 @@ const UserFeed = () => {
                                             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                                                 <Typography variant="h6">{selectedPost && selectedPost.username}</Typography>
                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Typography variant="body2">{selectedPost.timestamp ? formatTimestamp(selectedPost.timestamp) : 'N/A'}</Typography>
+                                        <Typography variant="body2">{selectedPost.timestamp ? (selectedPost.timestamp) : 'N/A'}</Typography>
                                         <Chip label={selectedPost && selectedPost.category} variant="outlined" size="small" sx={{ marginLeft: 1 }} />
 
                                         

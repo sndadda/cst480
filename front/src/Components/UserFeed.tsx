@@ -65,7 +65,7 @@ const UserFeed = () => {
 
     type Comment = {
         post_id: number | null;
-        parent_comment_id: number | null; // Nullable since a comment might not have a parent
+        parent_comment_id: number | null; 
         content: string | null;
     };
 
@@ -109,8 +109,23 @@ const UserFeed = () => {
     const [showCommentField, setShowCommentField] = useState<boolean>(false);
     const [replyTo, setReplyTo] = useState<{username: string; user_id: number, comment_id: number}>({username: "", user_id: -1, comment_id: -1});
     
-   
+    const [selectedOption, setSelectedOption] = useState('newest_to_oldest');
+    const [sortedPosts, setSortedPosts] = useState<any[]>([]);
 
+    const sortPosts = () => {
+        if (feedContent) {
+            let sorted = [...feedContent.message]; 
+    
+            
+            if (selectedOption === 'newest_to_oldest') {
+                sorted.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            } else if (selectedOption === 'oldest_to_newest') {
+                sorted.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            }
+    
+            setSortedPosts(sorted);
+        }
+    };
     
 
     useEffect(() => {
@@ -191,6 +206,11 @@ const UserFeed = () => {
         };
     }, [socket]);
 
+    useEffect(() => {
+        
+        sortPosts();
+    }, [selectedOption, feedContent]);
+
    
 
     const handleSubmit = (e: any) => {
@@ -212,6 +232,15 @@ const UserFeed = () => {
             [name]: value
         }));
     }; 
+
+    const filterOptions = [
+        { label: 'Newest to Oldest', value: 'newest_to_oldest' },
+        { label: 'Oldest to Newest', value: 'oldest_to_newest' },
+        { label: 'Option 3', value: 'option3' },
+    ];
+
+    
+
     function arrayBufferToBase64(buffer:any) {
         let binary = '';
         const bytes = new Uint8Array(buffer);
@@ -317,6 +346,8 @@ const UserFeed = () => {
                                 }}
                             />
                         </FormControl> */}
+
+
                         <TextField
                             id="subject"
                             label="subject"
@@ -405,9 +436,26 @@ const UserFeed = () => {
                 </Fade>
             </Modal>
 
+            {/* Filtering */}
+            <FormControl style={{ minWidth: 120, padding: '20px'}}>
+                <InputLabel id="filter-label">Filter</InputLabel>
+                <Select
+                    labelId="filter-label"
+                    id="filter-select"
+                    value={selectedOption}
+                    onChange={(e) => {
+                        setSelectedOption(e.target.value);
+                    }}
+                >
+                    {filterOptions.map((option, index) => (
+                        <MenuItem key={index} value={option.value}>
+                            {option.label}
+                        </MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
 
-
-            {feedContent && feedContent.message.map((post, index) => (
+            {sortedPosts && sortedPosts.map((post, index) => (
                     <Card 
                         key={index} 
                         // onClick={() => {
@@ -423,10 +471,10 @@ const UserFeed = () => {
                         <Button
                             variant="outlined"
                             onClick={() => {
-                                // Handle expand button click
+                           
                                 //setSelectedPost({...post, userLikes: feedContent.userLikes, image: arrayBufferToBase64(post.image)});
                                 socket.emit(SOCKET_EVENTS.DISPLAY_FEED_POST_COMMENTS, selectedPost?.id);
-                                setSelectedPost({...post, userLikes: feedContent.userLikes});
+                                setSelectedPost({...post, userLikes: feedContent?.userLikes});
                                 setDisplaySpecificPost(true);
                                 setIsLikedModalforPost(selectedPost?.userLikes?.some(like => like.post_id === selectedPost?.id) ? true : false);
                                 //setpostIdForModal(post.id);
@@ -450,7 +498,7 @@ const UserFeed = () => {
                                 Expand
                         </Button> */}
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-                            <Avatar>{/* Avatar component goes here */}</Avatar>
+                            <Avatar></Avatar>
                             <Typography variant="subtitle1">{post.username}</Typography>
                         </div>
                         <Typography variant="subtitle1">Subject: {post.subject}</Typography>
@@ -485,7 +533,7 @@ const UserFeed = () => {
                             
                             }}
                         >
-                            {feedContent.userLikes?.some(like => like.post_id === post.id) ? (
+                            {feedContent?.userLikes?.some(like => like.post_id === post.id) ? (
                                 <FavoriteIcon id={`post-${post.id}-heart-icon`} style={{ color: 'red' }} />
                             ) : (
                                 <FavoriteBorderIcon id={`post-${post.id}-heart-icon`} />

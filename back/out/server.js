@@ -22,6 +22,7 @@ let app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors());
+app.use(express.static("public"));
 let server = http.createServer(app);
 let io = new Server(server, {
     cors: {
@@ -89,8 +90,8 @@ app.get("/api/loggedin", async (req, res) => {
     let image = result[0].image;
     let bufferImage, imageBase64;
     if (image) {
-        bufferImage = Buffer.from(image, 'binary');
-        imageBase64 = `data:image/jpeg;base64,${bufferImage.toString('base64')}`;
+        bufferImage = Buffer.from(image, "binary");
+        imageBase64 = `data:image/jpeg;base64,${bufferImage.toString("base64")}`;
     }
     else {
         imageBase64 = null;
@@ -243,18 +244,18 @@ app.get("/api/postLikes", authorize, async (req, res) => {
     }
     return res.status(200).json({ cuteCatLikes: result });
 });
-app.post('/api/uploadAvatar', upload.single('avatar'), (req, res) => {
-    const db = new sqlite3.Database('./database.db');
+app.post("/api/uploadAvatar", upload.single("avatar"), (req, res) => {
+    const db = new sqlite3.Database("./database.db");
     const { file } = req;
     let id = res.locals.id;
     try {
-        db.run('UPDATE users SET image = ? WHERE id = ?', [file.buffer, id], (err) => {
+        db.run("UPDATE users SET image = ? WHERE id = ?", [file.buffer, id], (err) => {
             if (err) {
                 console.log(err);
-                res.status(500).send('Error updating user avatar');
+                res.status(500).send("Error updating user avatar");
             }
             else {
-                res.status(200).send('User avatar updated successfully');
+                res.status(200).send("User avatar updated successfully");
             }
         });
         db.close();
@@ -263,6 +264,9 @@ app.post('/api/uploadAvatar', upload.single('avatar'), (req, res) => {
         let error = err;
         return res.status(500).json({ error: error.toString() });
     }
+});
+app.get("*", (req, res) => {
+    res.sendFile("out/public/index.html", { root: __dirname });
 });
 //////START OF SOCKETS//////////
 io.use(async (socket, next) => {
@@ -304,7 +308,7 @@ io.on("connection", (socket) => {
     let userId = socket.data; // userId is accessible in every socket event
     socket.on(SOCKET_EVENTS.CREATE_POST, async (data) => {
         try {
-            let base64image = '';
+            let base64image = "";
             let { user_id, marker_id, subject, content, image, category } = data;
             //console.log(user_id, marker_id, subject, content, image)
             // if (image) {
@@ -326,7 +330,10 @@ io.on("connection", (socket) => {
                 }
             });
             const userLikes = await db.all("SELECT * FROM post_likes WHERE user_id = ?", [userId]);
-            io.emit(SOCKET_EVENTS.UPDATE_FEED, { message: allPosts, userLikes: userLikes });
+            io.emit(SOCKET_EVENTS.UPDATE_FEED, {
+                message: allPosts,
+                userLikes: userLikes,
+            });
         }
         catch (error) {
             //console.log(error);
@@ -393,13 +400,20 @@ io.on("connection", (socket) => {
                 //Unlike the post since the like is button is hit when the post is already liked.
                 await db.run("DELETE FROM post_likes WHERE post_id = ? AND user_id = ?", [post_id, userId]);
                 // Decrement the total likes in the posts db.
-                await db.run("UPDATE posts SET likes = likes - 1 WHERE id = ?", [post_id]);
+                await db.run("UPDATE posts SET likes = likes - 1 WHERE id = ?", [
+                    post_id,
+                ]);
             }
             else {
                 // Like the post since user did not liked it yet.
-                await db.run("INSERT INTO post_likes(post_id, user_id) VALUES(?, ?)", [post_id, userId]);
+                await db.run("INSERT INTO post_likes(post_id, user_id) VALUES(?, ?)", [
+                    post_id,
+                    userId,
+                ]);
                 // Increment total likes for the specific post.
-                await db.run("UPDATE posts SET likes = likes + 1 WHERE id = ?", [post_id]);
+                await db.run("UPDATE posts SET likes = likes + 1 WHERE id = ?", [
+                    post_id,
+                ]);
             }
             //const allPosts = await db.all("SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image FROM posts LEFT JOIN users ON posts.user_id = users.id");
             const allPosts = await db.all("SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image, posts.category FROM posts LEFT JOIN users ON posts.user_id = users.id");
@@ -410,7 +424,10 @@ io.on("connection", (socket) => {
             });
             const userLikes = await db.all("SELECT * FROM post_likes WHERE user_id = ?", [userId]);
             // console.log(userLikes);
-            io.emit(SOCKET_EVENTS.UPDATE_FEED, { message: allPosts, userLikes: userLikes });
+            io.emit(SOCKET_EVENTS.UPDATE_FEED, {
+                message: allPosts,
+                userLikes: userLikes,
+            });
         }
         catch (error) {
             //console.log(error);
@@ -433,7 +450,9 @@ io.on("connection", (socket) => {
     });
     socket.on(SOCKET_EVENTS.GET_USERNAME, async (data) => {
         try {
-            const username = await db.all("select username from users where id = ?", [userId]);
+            const username = await db.all("select username from users where id = ?", [
+                userId,
+            ]);
             console.log(username[0].username);
             io.emit(SOCKET_EVENTS.SEND_USERNAME, { message: username[0].username });
         }
@@ -445,9 +464,13 @@ io.on("connection", (socket) => {
         try {
             let post_id = data;
             console.log("DELETE this post_id", post_id);
-            let result = await db.all('DELETE FROM post_likes WHERE post_id = ?', [post_id]);
-            result = await db.all('DELETE FROM comments WHERE post_id = ?', [post_id]);
-            result = await db.all('DELETE FROM posts WHERE id = ?', [post_id]);
+            let result = await db.all("DELETE FROM post_likes WHERE post_id = ?", [
+                post_id,
+            ]);
+            result = await db.all("DELETE FROM comments WHERE post_id = ?", [
+                post_id,
+            ]);
+            result = await db.all("DELETE FROM posts WHERE id = ?", [post_id]);
             const allPosts = await db.all("SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image, posts.category FROM posts LEFT JOIN users ON posts.user_id = users.id");
             const userLikes = await db.all("SELECT * FROM post_likes WHERE user_id = ?", [userId]);
             allPosts.forEach((post) => {
@@ -468,14 +491,14 @@ io.on("connection", (socket) => {
         try {
             const now = new Date();
             const offset = -4.0;
-            const localNow = new Date(now.getTime() + (3600000 * offset));
-            const timestamp = localNow.toISOString().slice(0, 19).replace('T', ' ');
+            const localNow = new Date(now.getTime() + 3600000 * offset);
+            const timestamp = localNow.toISOString().slice(0, 19).replace("T", " ");
             result = await db.all("INSERT INTO markers(user_id, latitude, longitude, timestamp) VALUES (?, ?, ?, ?) RETURNING id", [userId, latitude, longitude, timestamp]);
             socket.emit(SOCKET_EVENTS.MARKER_CREATED, {
                 id: result[0].id,
                 latitude,
                 longitude,
-                timestamp
+                timestamp,
             });
             let updatedMarkers;
             updatedMarkers = await db.all("SELECT markers.id, latitude, longitude, markers.timestamp FROM markers INNER JOIN users ON users.id = markers.user_id");
@@ -510,8 +533,8 @@ io.on("connection", (socket) => {
         try {
             const now = new Date();
             const offset = -4.0;
-            const localNow = new Date(now.getTime() + (3600000 * offset));
-            const timestampl = localNow.toISOString().slice(0, 19).replace('T', ' ');
+            const localNow = new Date(now.getTime() + 3600000 * offset);
+            const timestampl = localNow.toISOString().slice(0, 19).replace("T", " ");
             result = await db.all("INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image, category) VALUES(?, ?, ?, ?, ?, ?, ?) RETURNING id", [userId, marker_id, subject, content, timestampl, image, category]);
             console.log("post saved");
             if (!result || result.length === 0) {
@@ -559,7 +582,9 @@ io.on("connection", (socket) => {
         let { image } = data;
         let result;
         if (!userId || !image) {
-            socket.emit(SOCKET_EVENTS.PROFILE_ERROR, { error: "Missing required data" });
+            socket.emit(SOCKET_EVENTS.PROFILE_ERROR, {
+                error: "Missing required data",
+            });
             return;
         }
         try {
@@ -587,7 +612,9 @@ io.on("connection", (socket) => {
         let { image } = data;
         let result;
         if (!userId || !image) {
-            socket.emit(SOCKET_EVENTS.PROFILE_ERROR, { error: "Missing required data" });
+            socket.emit(SOCKET_EVENTS.PROFILE_ERROR, {
+                error: "Missing required data",
+            });
             return;
         }
         try {
@@ -663,10 +690,10 @@ io.on("connection", (socket) => {
         try {
             const now = new Date();
             const offset = -4.0;
-            const localNow = new Date(now.getTime() + (3600000 * offset));
-            const timestampl = localNow.toISOString().slice(0, 19).replace('T', ' ');
+            const localNow = new Date(now.getTime() + 3600000 * offset);
+            const timestampl = localNow.toISOString().slice(0, 19).replace("T", " ");
             const parent_comment_id = 1;
-            console.log('hi');
+            console.log("hi");
             await db.all("INSERT INTO comments(post_id, parent_comment_id, user_id, content, timestamp, likes) VALUES(?, ?, ?, ?, ?, ?)", [post_id, parent_comment_id, user_id, content, timestampl, 1]);
             mapPostComments = await db.all("SELECT comments.id, comments.post_id, comments.content, comments.timestamp, users.name as name FROM comments INNER JOIN users ON users.id = comments.user_id WHERE comments.post_id = ?", [post_id]);
             console.log(mapPostComments);
@@ -693,16 +720,20 @@ io.on("connection", (socket) => {
             socket.emit(SOCKET_EVENTS.MAP_ERROR, { error: error.toString() });
         }
     });
-    socket.on('DELETE_POST', async ({ postId }) => {
-        const marker = await db.get("SELECT marker_id FROM posts WHERE id = ?", [postId]);
+    socket.on("DELETE_POST", async ({ postId }) => {
+        const marker = await db.get("SELECT marker_id FROM posts WHERE id = ?", [
+            postId,
+        ]);
         await db.run("DELETE FROM comments WHERE post_id = ?", [postId]);
         await db.run("DELETE FROM posts WHERE id = ?", [postId]);
-        const posts = await db.all("SELECT * FROM posts WHERE marker_id = ?", [marker.marker_id]);
+        const posts = await db.all("SELECT * FROM posts WHERE marker_id = ?", [
+            marker.marker_id,
+        ]);
         if (posts.length === 0) {
             await db.run("DELETE FROM markers WHERE id = ?", [marker.marker_id]);
-            io.emit('MARKER_DELETED', { markerId: marker.marker_id });
+            io.emit("MARKER_DELETED", { markerId: marker.marker_id });
         }
-        io.emit('POST_DELETED', { postId });
+        io.emit("POST_DELETED", { postId });
     });
     /* Cute Cat Post Socket Events */
     socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {

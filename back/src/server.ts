@@ -337,8 +337,7 @@ io.on("connection", (socket) => {
 
   socket.on(SOCKET_EVENTS.CREATE_POST, async (data) => {
     try {
-
-      let base64image = '';
+      let base64image = "";
       let { user_id, marker_id, subject, content, image, category } = data;
       //console.log(user_id, marker_id, subject, content, image)
 
@@ -350,8 +349,6 @@ io.on("connection", (socket) => {
       //     "binary"
       //   ).toString("base64");
       // }
-      
-
 
       const result = await db.all(
         "INSERT INTO posts(user_id, marker_id, subject, content, timestamp, image, category) VALUES(?, ?, ?, ?, DATETIME('now'), ?, ?) RETURNING id",
@@ -361,7 +358,9 @@ io.on("connection", (socket) => {
       // console.log(`Post id: ${result[0].id}`);
 
       // const allPosts = await db.all("SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image FROM posts LEFT JOIN users ON posts.user_id = users.id");
-      const allPosts = await db.all("SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image, posts.category FROM posts LEFT JOIN users ON posts.user_id = users.id");
+      const allPosts = await db.all(
+        "SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image, posts.category FROM posts LEFT JOIN users ON posts.user_id = users.id"
+      );
       allPosts.forEach((post) => {
         if (post.image) {
           post.image = `data:image/jpeg;base64,${post.image.toString(
@@ -375,10 +374,12 @@ io.on("connection", (socket) => {
         [userId]
       );
 
-      io.emit(SOCKET_EVENTS.UPDATE_FEED, { message: allPosts, userLikes: userLikes });
+      io.emit(SOCKET_EVENTS.UPDATE_FEED, {
+        message: allPosts,
+        userLikes: userLikes,
+      });
     } catch (error) {
       //console.log(error);
-
 
       socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
     }
@@ -415,9 +416,9 @@ io.on("connection", (socket) => {
 
   socket.on(SOCKET_EVENTS.UPDATE_FEED, async (data) => {
     try {
-
-      const allPosts = await db.all("SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image, posts.category FROM posts LEFT JOIN users ON posts.user_id = users.id");
-
+      const allPosts = await db.all(
+        "SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image, posts.category FROM posts LEFT JOIN users ON posts.user_id = users.id"
+      );
 
       const userLikes = await db.all(
         "SELECT * FROM post_likes WHERE user_id = ?",
@@ -441,11 +442,12 @@ io.on("connection", (socket) => {
       // })
       console.log(userId);
 
-      
       // console.log(userLikes);
       //console.log(allPosts);
-      io.emit(SOCKET_EVENTS.UPDATE_FEED, { message: allPosts, userLikes: userLikes});
-
+      io.emit(SOCKET_EVENTS.UPDATE_FEED, {
+        message: allPosts,
+        userLikes: userLikes,
+      });
     } catch (error) {
       socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
     }
@@ -486,9 +488,10 @@ io.on("connection", (socket) => {
         ]);
       }
 
-      
       //const allPosts = await db.all("SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image FROM posts LEFT JOIN users ON posts.user_id = users.id");
-      const allPosts = await db.all("SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image, posts.category FROM posts LEFT JOIN users ON posts.user_id = users.id");
+      const allPosts = await db.all(
+        "SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image, posts.category FROM posts LEFT JOIN users ON posts.user_id = users.id"
+      );
       allPosts.forEach((post) => {
         if (post.image) {
           post.image = `data:image/jpeg;base64,${post.image.toString(
@@ -497,15 +500,16 @@ io.on("connection", (socket) => {
         }
       });
 
-//       const userLikes = await db.all(
-//         "SELECT * FROM post_likes WHERE user_id = ?",
-//         [userId]
-//       );
+      const userLikes = await db.all(
+        "SELECT * FROM post_likes WHERE user_id = ?",
+        [userId]
+      );
 
       // console.log(userLikes);
-      io.emit(SOCKET_EVENTS.UPDATE_FEED, { message: allPosts, userLikes: userLikes });
-
-
+      io.emit(SOCKET_EVENTS.UPDATE_FEED, {
+        message: allPosts,
+        userLikes: userLikes,
+      });
     } catch (error) {
       //console.log(error);
       socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
@@ -521,14 +525,11 @@ io.on("connection", (socket) => {
       //   [post_id]
       // );
 
-      
-
       const postComments = await db.all(
         "select comments.id, comments.post_id, comments.parent_comment_id, comments.user_id, comments.content, comments.timestamp, comments.likes, b.username, b.id as username_id from comments join (select id, username from users) as b on comments.user_id = b.id"
       );
 
-
-      io.emit(SOCKET_EVENTS.UPDATE_POST, {message: postComments})
+      io.emit(SOCKET_EVENTS.UPDATE_POST, { message: postComments });
     } catch (error) {
       socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
     }
@@ -536,13 +537,12 @@ io.on("connection", (socket) => {
 
   socket.on(SOCKET_EVENTS.GET_USERNAME, async (data) => {
     try {
-      const username = await db.all(
-        "select username from users where id = ?",
-        [userId]
-      );
+      const username = await db.all("select username from users where id = ?", [
+        userId,
+      ]);
       console.log(username[0].username);
 
-      io.emit(SOCKET_EVENTS.SEND_USERNAME, {message: username[0].username});
+      io.emit(SOCKET_EVENTS.SEND_USERNAME, { message: username[0].username });
     } catch (error) {
       socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
     }
@@ -550,27 +550,22 @@ io.on("connection", (socket) => {
 
   socket.on(SOCKET_EVENTS.DELETE_FEED_POST, async (data) => {
     try {
-
-
       let post_id = data;
 
-      console.log("DELETE this post_id",post_id);
-      let result = await db.all(
-        'DELETE FROM post_likes WHERE post_id = ?',
-        [post_id]
-      );
+      console.log("DELETE this post_id", post_id);
+      let result = await db.all("DELETE FROM post_likes WHERE post_id = ?", [
+        post_id,
+      ]);
 
-      result = await db.all(
-        'DELETE FROM comments WHERE post_id = ?',
-        [post_id]
-      );
+      result = await db.all("DELETE FROM comments WHERE post_id = ?", [
+        post_id,
+      ]);
 
-      result = await db.all(
-        'DELETE FROM posts WHERE id = ?',
-        [post_id]
+      result = await db.all("DELETE FROM posts WHERE id = ?", [post_id]);
+
+      const allPosts = await db.all(
+        "SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image, posts.category FROM posts LEFT JOIN users ON posts.user_id = users.id"
       );
-      
-      const allPosts = await db.all("SELECT posts.id, users.username, posts.subject, posts.content, posts.timestamp, posts.likes, posts.image, posts.category FROM posts LEFT JOIN users ON posts.user_id = users.id");
       const userLikes = await db.all(
         "SELECT * FROM post_likes WHERE user_id = ?",
         [userId]
@@ -583,8 +578,10 @@ io.on("connection", (socket) => {
         }
       });
 
-   
-      io.emit(SOCKET_EVENTS.UPDATE_FEED, { message: allPosts, userLikes: userLikes});
+      io.emit(SOCKET_EVENTS.UPDATE_FEED, {
+        message: allPosts,
+        userLikes: userLikes,
+      });
     } catch (error) {
       socket.emit(SOCKET_EVENTS.ERROR, { message: "An error occurred." });
     }
@@ -909,22 +906,25 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on('DELETE_POST', async ({ postId }) => {
-    const marker = await db.get("SELECT marker_id FROM posts WHERE id = ?", [postId]);
+  socket.on("DELETE_POST", async ({ postId }) => {
+    const marker = await db.get("SELECT marker_id FROM posts WHERE id = ?", [
+      postId,
+    ]);
 
     await db.run("DELETE FROM comments WHERE post_id = ?", [postId]);
     await db.run("DELETE FROM posts WHERE id = ?", [postId]);
-    const posts = await db.all("SELECT * FROM posts WHERE marker_id = ?", [marker.marker_id]);
-  
+    const posts = await db.all("SELECT * FROM posts WHERE marker_id = ?", [
+      marker.marker_id,
+    ]);
+
     if (posts.length === 0) {
       await db.run("DELETE FROM markers WHERE id = ?", [marker.marker_id]);
-  
-      io.emit('MARKER_DELETED', { markerId: marker.marker_id });
-    }
-  
-    io.emit('POST_DELETED', { postId });
-  });
 
+      io.emit("MARKER_DELETED", { markerId: marker.marker_id });
+    }
+
+    io.emit("POST_DELETED", { postId });
+  });
 
   /* Cute Cat Post Socket Events */
   socket.on(SOCKET_EVENTS.CUTE_CAT_POST, async (data) => {

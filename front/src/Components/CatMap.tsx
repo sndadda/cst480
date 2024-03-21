@@ -30,7 +30,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import axios from 'axios';
 import "./CatMap.css";
 
-// Helper function to format the timestamp
+
 function formatTimestamp(timestamp: string) {
   const postDate = new Date(timestamp);
   const currentDate = new Date();
@@ -66,8 +66,11 @@ function getMarkerColor(timestamp: string) {
     return 'grey';
   }
 }
+if (!import.meta.env.VITE_APP_MAPBOX_ACCESS_TOKEN) {
+  throw new Error('Missing Mapbox access token');
+}
 
-mapboxgl.accessToken = 'pk.eyJ1Ijoic25kYWRkYTYzIiwiYSI6ImNsc3RtdnZrODBxaDkya21xdDUyMzVseWYifQ.1LO5AE0xSXX9ndA9l1lcZw'
+mapboxgl.accessToken = import.meta.env.VITE_APP_MAPBOX_ACCESS_TOKEN;
 function CatMap() {
  
     const [commentFormData, setCommentFormData] = useState({

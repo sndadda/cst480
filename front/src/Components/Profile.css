@@ -1,13 +1,13 @@
 .profile-background {
     background-image: url('profile_background.png');
     background-size: cover;
-    background-position: center 20px; /* Move the background image down by the height of the navbar */
+    background-position: center 20px; 
     background-repeat: no-repeat;
     height: 250vh;
     display: flex;
-    align-items: flex-start; /* Vertically align the avatar in the middle */
-    justify-content: flex-start; /* Horizontally align the avatar to the left */
-    padding-left: 140px; /* Add some space from the left edge */
+    align-items: flex-start; 
+    justify-content: flex-start; 
+    padding-left: 140px; 
     padding-top: 60vh;
   }
   
